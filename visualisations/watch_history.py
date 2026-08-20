@@ -1,3 +1,4 @@
+import base64
 from io import BytesIO
 
 import pandas as pd
@@ -22,24 +23,24 @@ def plot_weekday_counts(weekday_counts: pd.Series) -> None:
     plt.show()
 
 
+def create_figure(series: pd.Series, plot_type: str, xlabel: str, ylabel: str):
 
-def create_hourly_figure(hourly_counts: pd.Series):
     fig, ax = plt.subplots()
 
-    hourly_counts.sort_index().plot(kind='bar', ax = ax)
+    match plot_type:
+        case 'bar':
+            series.plot(kind='bar',ax=ax)
 
-    ax.set_xlabel('Hour of Day')
-    ax.set_ylabel('Videos Scrolled')
+        case 'pie':
+            series.plot(kind='pie',ax=ax,autopct='%1.1f%%')
+
+        case 'line':
+            series.plot(kind='line', ax=ax)
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
     return fig
-
-
-def create_weekday_pie(weekday_counts: pd.Series):
-    fig, ax = plt.subplots()
-    weekday_counts.plot(kind='pie', autopct='%1.1f%%', ax=ax)
-    return fig
-
-
 
 def figure_to_buffer(fig) -> BytesIO:
     buffer = BytesIO()
@@ -50,3 +51,13 @@ def figure_to_buffer(fig) -> BytesIO:
     plt.close(fig)
 
     return buffer
+
+
+
+def buffer_to_base64(buffer: BytesIO) -> str:
+
+    encoded_image = base64.b64encode(buffer.getvalue())
+    image_representation = encoded_image.decode('utf-8')
+
+    buffer.close()
+    return image_representation
