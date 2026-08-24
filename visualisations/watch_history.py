@@ -2,7 +2,7 @@ import base64
 from io import BytesIO
 
 import pandas as pd
-import matplotlib.pyplot as pltx
+import matplotlib.pyplot as plt
 
 def plot_hourly_counts(hourly_counts: pd.Series) -> None:
 

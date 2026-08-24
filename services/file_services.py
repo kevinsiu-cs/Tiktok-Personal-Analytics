@@ -17,10 +17,6 @@ REQUIRED_FIELDS = {
 
 TIKTOK_JSON_FILENAME = 'user_data_tiktok.json'
 
-WATCH_HISTORY_FIELDS = ('Date',)
-LOGIN_HISTORY_FIELDS = ('Date', 'NetworkType')
-
-
 MAX_UNCOMPRESSED_SIZE = 500 * 1024 * 1024  # 500 MiB
 
 def validate_zip_archive(
@@ -151,59 +147,4 @@ def validate_tiktok_archive(
         return False, 'The TikTok data file could not be read.', None
 
     return True, None, data
-
-
-# To-do, move these functions into a separate analytics_services file.
-
-#We will santitise and remove any unused columns before casting into a dataframe
-#to ensure that we don't use any sensitive / private data when doing the anayltics.
-#It will also ensure that we don't do any redundant data handling later on.
-
-
-def get_watch_history(data: dict | None) -> list[dict]:
-    if data is None:
-        raise ValueError('TikTok data cannot be empty')
-
-    curr = data
-
-    for key in SECTION_PATHS['watch_history']:
-        curr = curr[key]
-
-    watch_history = []
-
-    for record in curr:
-        sanitised_record = {}
-
-        for field in WATCH_HISTORY_FIELDS:
-            sanitised_record[field] = record.get(field)
-
-        watch_history.append(sanitised_record)
-
-    return watch_history
-
-
-def get_login_history(data: dict | None) -> list[dict]:
-
-    if data is None:
-        raise ValueError('TikTok data cannot be empty')
-
-    curr = data
-
-    for key in SECTION_PATHS['login_history']:
-        curr = curr[key]
-
-    login_history = []
-
-    for record in curr:
-        sanitised_record = {}
-
-        for field in LOGIN_HISTORY_FIELDS:
-            sanitised_record[field] = record.get(field)
-
-        login_history.append(sanitised_record)
-
-    return login_history
-
-
-
 

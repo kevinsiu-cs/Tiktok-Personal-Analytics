@@ -32,10 +32,16 @@ def create_login_history_dataframe(login_history: list[dict]) -> pd.DataFrame:
 
 
 def get_login_daily_counts(login_history_df: pd.DataFrame) -> pd.Series:
+    if login_history_df.empty:
+        return pd.Series(dtype='int64')
+
     return login_history_df.resample('D', on='Date').size()
 
 
 def get_login_weekly_counts(login_history_df: pd.DataFrame) -> pd.Series:
+    if login_history_df.empty:
+        return pd.Series(dtype='int64')
+
     # rule: W-Mon, Weekly buckets starting from Monday
     # label: Label is using the left value of the 'bucket'
     # closed: We are including the left value and ignoring the right.
@@ -45,6 +51,9 @@ def get_login_weekly_counts(login_history_df: pd.DataFrame) -> pd.Series:
 
 
 def get_login_monthly_counts(login_history_df: pd.DataFrame) -> pd.Series:
+    if login_history_df.empty:
+        return pd.Series(dtype='int64')
+
     # MS = Month start
     # Group rows by calendar month
     return login_history_df.resample('MS', on='Date').size()
