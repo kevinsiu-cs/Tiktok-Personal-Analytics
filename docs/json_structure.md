@@ -26,7 +26,7 @@ root
 ### Activity Sections Used:
 ```text
 Your Activity:
-    ├── Activity Summary
+    ├── Activity Summary 
     ├── Collection
     ├── Favorite Collection
     ├── Favorite Comment
@@ -36,8 +36,8 @@ Your Activity:
     ├── Favorite Sounds
     ├── Favorite Videos
     ├── Like List
-    ├── Login History
+    ├── Login History  ⭐
     ├── Purchases
     ├── Searches
-    └── Watch History
+    └── Watch History ⭐
 ```

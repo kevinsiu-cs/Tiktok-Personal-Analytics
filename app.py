@@ -1,56 +1,62 @@
-from pathlib import Path
+import os
 
 from flask import Flask, render_template
-import base64
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField, FileRequired
 
-from services import file_services
-from analytics import watch_history as watch_history_analytics
-from visualisations import watch_history as watch_history_visualisations
+from dotenv import load_dotenv
+
+from wtforms import SubmitField
+
+from services.file_services import validate_tiktok_archive, validate_zip_archive
+
+
+load_dotenv()
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MiB
 
+class UploadFileForm(FlaskForm):
 
-def prepare_watch_history_dataframe(path: Path):
-    tiktok_data = file_services.load_file_as_json(path)
-    watch_history_records = file_services.get_watch_history(tiktok_data)
-
-    watch_history_df = watch_history_analytics.create_watch_history_dataframe(
-        watch_history_records
+    uploaded_file = FileField(
+        "File",
+        validators=[
+            FileRequired(),
+            FileAllowed(["zip"],)
+        ]
     )
 
-    return watch_history_analytics.add_watch_history_features(watch_history_df)
+    submit = SubmitField('Upload')
 
-
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    data_path = (
-        Path(__file__).parent
-        / 'data'
-        / 'user_data_tiktok.json'
-    )
+    form = UploadFileForm()
 
-    watch_history_df = prepare_watch_history_dataframe(data_path)
-    summary = watch_history_analytics.create_watch_history_summary(
-        watch_history_df
-    )
+    if form.validate_on_submit():
+        uploaded_file = form.uploaded_file.data
+        is_valid, error_message = validate_zip_archive(uploaded_file)
 
-    hourly_counts = summary['hourly_counts']
+        if not is_valid:
+            form.uploaded_file.errors.append(error_message)
+        else:
+            is_valid, error_message, _ = validate_tiktok_archive(uploaded_file)
 
-    fig1 = watch_history_visualisations.create_hourly_figure(hourly_counts)
-    buffer1 = watch_history_visualisations.figure_to_buffer(fig1)
-    hourly_graph = base64.b64encode(buffer1.getvalue()).decode('utf-8')
+            if not is_valid:
+                form.uploaded_file.errors.append(error_message)
 
-    weekday_counter = summary['weekday_counts']
-    fig2 = watch_history_visualisations.create_weekday_pie(weekday_counter)
-    buffer2 = watch_history_visualisations.figure_to_buffer(fig2)
-    weekday_graph = base64.b64encode(buffer2.getvalue()).decode('utf-8')
+    return render_template('index.html', form=form)
 
+
+@app.errorhandler(413)
+def upload_too_large(error):
+    # Render the normal form instead of Flask's generic oversized-request page.
+    form = UploadFileForm(formdata=None)
     return render_template(
         'index.html',
-        hourly_graph=hourly_graph,
-        weekday_graph=weekday_graph
-    )
-
+        form=form,
+        request_error='The uploaded file must be 50 MB or smaller.',
+    ), 413
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wasted on TikTok</title>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+    <main>
+        <h1>Wasted on TikTok</h1>
+        <p>
+            Upload your TikTok data export to analyse your viewing behaviour.
+        </p>
+
+        <form class="upload-form" method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+
+            <p id="selected-file" aria-live="polite">
+                <strong>Uploaded file:</strong>
+                <span id="selected-file-name">None</span>
+            </p>
+            <p id="file-error" role="alert" hidden></p>
+
+            <label class="upload-area" for="tiktok-export">
+                <strong>Drag and drop your TikTok data export here</strong><br>
+                <span>or click to select a ZIP file</span>
+                {{ form.uploaded_file(id="tiktok-export", accept=".zip") }}
+            </label>
+
+            {% if request_error or form.uploaded_file.errors %}
+                <ul>
+                    {% if request_error %}
+                        <li>{{ request_error }}</li>
+                    {% endif %}
+                    {% for error in form.uploaded_file.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {{ form.submit(class_="submit-button") }}
+        </form>
+
+    </main>
+    <script
+        src="{{ url_for('static', filename='script.js') }}"
+        defer
+    ></script>
+</body>
+
+</html>
