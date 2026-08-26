@@ -14,38 +14,97 @@
 <body>
     <main>
         <h1>Wasted on TikTok</h1>
-        <p>
-            Upload your TikTok data export to analyse your viewing behaviour.
-        </p>
 
-        <form class="upload-form" method="POST" enctype="multipart/form-data">
-            {{ form.hidden_tag() }}
+        {% if not charts %}
+            <section class="upload-section" aria-label="Upload TikTok data">
+                <p>
+                    Upload your TikTok data export to analyse your viewing
+                    behaviour.
+                </p>
 
-            <p id="selected-file" aria-live="polite">
-                <strong>Uploaded file:</strong>
-                <span id="selected-file-name">None</span>
-            </p>
-            <p id="file-error" role="alert" hidden></p>
+                <form
+                    class="upload-form"
+                    method="POST"
+                    enctype="multipart/form-data"
+                >
+                    {{ form.hidden_tag() }}
 
-            <label class="upload-area" for="tiktok-export">
-                <strong>Drag and drop your TikTok data export here</strong><br>
-                <span>or click to select a ZIP file</span>
-                {{ form.uploaded_file(id="tiktok-export", accept=".zip") }}
-            </label>
+                    <p id="selected-file" aria-live="polite">
+                        <strong>Uploaded file:</strong>
+                        <span id="selected-file-name">None</span>
+                    </p>
+                    <p id="file-error" role="alert" hidden></p>
 
-            {% if request_error or form.uploaded_file.errors %}
-                <ul>
-                    {% if request_error %}
-                        <li>{{ request_error }}</li>
+                    <label class="upload-area" for="tiktok-export">
+                        <strong>
+                            Drag and drop your TikTok data export here
+                        </strong><br>
+                        <span>or click to select a ZIP file</span>
+                        {{ form.uploaded_file(
+                            id="tiktok-export",
+                            accept=".zip"
+                        ) }}
+                    </label>
+
+                    {% if request_error or form.uploaded_file.errors %}
+                        <ul>
+                            {% if request_error %}
+                                <li>{{ request_error }}</li>
+                            {% endif %}
+                            {% for error in form.uploaded_file.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
                     {% endif %}
-                    {% for error in form.uploaded_file.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
 
-            {{ form.submit(class_="submit-button") }}
-        </form>
+                    {{ form.submit(class_="submit-button") }}
+                </form>
+            </section>
+        {% endif %}
+
+        {% if statistics and charts %}
+            <section aria-labelledby="analytics-heading">
+                <h2 id="analytics-heading">Your watch history</h2>
+
+                <dl>
+                    <div>
+                        <dt>Total videos watched</dt>
+                        <dd>{{ statistics.total_videos }}</dd>
+                    </div>
+                    <div>
+                        <dt>Active days</dt>
+                        <dd>{{ statistics.active_days }}</dd>
+                    </div>
+                    <div>
+                        <dt>Average videos per active day</dt>
+                        <dd>
+                            {{ '%.1f'|format(statistics.average_per_active_day) }}
+                        </dd>
+                    </div>
+                </dl>
+
+                <figure>
+                    <img
+                        src="data:image/png;base64,{{ charts.hourly }}"
+                        alt="Bar chart showing videos watched by hour of day"
+                    >
+                </figure>
+
+                <figure>
+                    <img
+                        src="data:image/png;base64,{{ charts.monthly }}"
+                        alt="Line chart showing the number of videos watched each month"
+                    >
+                </figure>
+
+                <figure>
+                    <img
+                        src="data:image/png;base64,{{ charts.weekday }}"
+                        alt="Pie chart showing the percentage of videos watched by weekday"
+                    >
+                </figure>
+            </section>
+        {% endif %}
 
     </main>
     <script

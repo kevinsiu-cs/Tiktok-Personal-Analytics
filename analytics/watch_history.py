@@ -4,6 +4,15 @@ import pandas as pd
 DEFAULT_SESSION_INACTIVITY_THRESHOLD = pd.Timedelta(minutes=30)
 DEFAULT_LATE_NIGHT_START_HOUR = 0
 DEFAULT_LATE_NIGHT_END_HOUR = 5
+WEEKDAY_ORDER = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+]
 
 
 def create_watch_history_dataframe(watch_history: list[dict]) -> pd.DataFrame:
@@ -55,7 +64,7 @@ def get_last_watch_datetime(
 
     return watch_history_df['Date'].max()
 
-
+#to-be-deleted.
 def get_calendar_days_covered(watch_history_df: pd.DataFrame) -> int:
     if watch_history_df.empty:
         return 0
@@ -66,7 +75,10 @@ def get_calendar_days_covered(watch_history_df: pd.DataFrame) -> int:
 
 
 def get_hourly_counts(watch_history_df: pd.DataFrame) -> pd.Series:
-    return watch_history_df['Hour'].value_counts()
+    return watch_history_df['Hour'].value_counts().reindex(
+        range(24),
+        fill_value=0,
+    )
 
 def get_daily_counts(watch_history_df: pd.DataFrame) -> pd.Series:
     if watch_history_df.empty:
@@ -75,7 +87,10 @@ def get_daily_counts(watch_history_df: pd.DataFrame) -> pd.Series:
     return watch_history_df.resample('D', on='Date').size()
 
 def get_weekday_counts(watch_history_df: pd.DataFrame) -> pd.Series:
-    return watch_history_df['Day'].value_counts()
+    return watch_history_df['Day'].value_counts().reindex(
+        WEEKDAY_ORDER,
+        fill_value=0,
+    )
 
 
 def get_weekly_counts(watch_history_df: pd.DataFrame) -> pd.Series:
