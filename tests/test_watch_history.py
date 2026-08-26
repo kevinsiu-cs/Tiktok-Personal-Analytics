@@ -20,7 +20,7 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
         )
 
     def test_session_threshold_is_inclusive(self):
-        sessions = watch_history.infer_estimated_sessions(
+        sessions = watch_history.infer_watch_sessions(
             self.watch_history_df
         )
 
@@ -32,10 +32,10 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
         )
 
     def test_session_summary_does_not_invent_final_video_duration(self):
-        sessions = watch_history.infer_estimated_sessions(
+        sessions = watch_history.infer_watch_sessions(
             self.watch_history_df
         )
-        statistics = watch_history.get_estimated_session_statistics(sessions)
+        statistics = watch_history.get_watch_session_statistics(sessions)
 
         self.assertEqual(
             statistics['estimated_total_observed_scrolling_time'],
@@ -90,7 +90,7 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
             watch_history.get_last_watch_datetime(self.watch_history_df),
             pd.Timestamp('2026-01-04 12:00:00'),
         )
-        self.assertEqual(watch_history.get_calendar_days_covered(self.watch_history_df), 4)
+        self.assertEqual(watch_history.get_watch_calendar_days_covered(self.watch_history_df), 4)
 
     def test_empty_dataframe_has_empty_range_metrics(self):
         empty = watch_history.add_watch_history_features(
@@ -99,15 +99,15 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
 
         self.assertIsNone(watch_history.get_first_watch_datetime(empty))
         self.assertIsNone(watch_history.get_last_watch_datetime(empty))
-        self.assertEqual(watch_history.get_calendar_days_covered(empty), 0)
-        self.assertEqual(watch_history.get_active_days(empty), 0)
+        self.assertEqual(watch_history.get_watch_calendar_days_covered(empty), 0)
+        self.assertEqual(watch_history.get_watch_active_days(empty), 0)
 
     def test_count_functions_group_events_correctly(self):
-        hourly = watch_history.get_hourly_counts(self.watch_history_df)
-        daily = watch_history.get_daily_counts(self.watch_history_df)
-        weekdays = watch_history.get_weekday_counts(self.watch_history_df)
-        weekly = watch_history.get_weekly_counts(self.watch_history_df)
-        monthly = watch_history.get_monthly_counts(self.watch_history_df)
+        hourly = watch_history.get_watch_hourly_counts(self.watch_history_df)
+        daily = watch_history.get_watch_daily_counts(self.watch_history_df)
+        weekdays = watch_history.get_watch_weekday_counts(self.watch_history_df)
+        weekly = watch_history.get_watch_weekly_counts(self.watch_history_df)
+        monthly = watch_history.get_watch_monthly_counts(self.watch_history_df)
 
         self.assertEqual(hourly.loc[0], 1)
         self.assertEqual(daily.loc['2026-01-02'], 2)
@@ -116,7 +116,7 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
         self.assertEqual(monthly.loc['2026-01-01'], 4)
 
     def test_daily_activity_statistics_use_only_active_days(self):
-        statistics = watch_history.get_daily_activity_statistics(
+        statistics = watch_history.get_watch_daily_activity_statistics(
             self.watch_history_df
         )
 
@@ -127,13 +127,13 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
     def test_empty_daily_activity_statistics_are_zero(self):
         empty = watch_history.create_watch_history_dataframe([])
 
-        statistics = watch_history.get_daily_activity_statistics(empty)
+        statistics = watch_history.get_watch_daily_activity_statistics(empty)
 
         self.assertEqual(statistics['average_videos_per_active_day'], 0.0)
         self.assertEqual(statistics['maximum_videos_in_one_day'], 0)
 
     def test_weekday_and_weekend_percentages(self):
-        activity = watch_history.get_weekday_weekend_activity(
+        activity = watch_history.get_watch_weekday_weekend_activity(
             self.watch_history_df
         )
 
@@ -143,7 +143,7 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
         self.assertEqual(activity['weekend_percentage'], 25.0)
 
     def test_late_night_period_supports_crossing_midnight(self):
-        percentage = watch_history.get_late_night_activity_percentage(
+        percentage = watch_history.get_watch_late_night_activity_percentage(
             self.watch_history_df,
             start_hour=23,
             end_hour=1,
@@ -155,7 +155,7 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
         for start_hour, end_hour in [(-1, 5), (0, 24), (5, 5)]:
             with self.subTest(start_hour=start_hour, end_hour=end_hour):
                 with self.assertRaises(ValueError):
-                    watch_history.get_late_night_activity_percentage(
+                    watch_history.get_watch_late_night_activity_percentage(
                         self.watch_history_df,
                         start_hour,
                         end_hour,
@@ -172,14 +172,14 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
         ]
         dataframe = watch_history.create_watch_history_dataframe(records)
 
-        trend = watch_history.get_daily_usage_trend(dataframe)
+        trend = watch_history.get_watch_daily_usage_trend(dataframe)
 
         self.assertEqual(trend['direction'], 'increasing')
         self.assertEqual(trend['daily_slope'], 1.0)
 
     def test_daily_usage_trend_rejects_negative_threshold(self):
         with self.assertRaisesRegex(ValueError, 'cannot be negative'):
-            watch_history.get_daily_usage_trend(
+            watch_history.get_watch_daily_usage_trend(
                 self.watch_history_df,
                 stable_threshold=-0.1,
             )
@@ -187,7 +187,7 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
     def test_session_inference_sorts_events(self):
         unordered = self.watch_history_df.sort_values('Date', ascending=False)
 
-        sessions = watch_history.infer_estimated_sessions(unordered)
+        sessions = watch_history.infer_watch_sessions(unordered)
 
         self.assertEqual(sessions.iloc[0]['StartTime'], pd.Timestamp('2026-01-01 23:50:00'))
 
@@ -195,17 +195,17 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
         for threshold in [pd.Timedelta(0), pd.Timedelta(minutes=-1)]:
             with self.subTest(threshold=threshold):
                 with self.assertRaisesRegex(ValueError, 'greater than zero'):
-                    watch_history.infer_estimated_sessions(
+                    watch_history.infer_watch_sessions(
                         self.watch_history_df,
                         threshold,
                     )
 
     def test_empty_session_statistics_are_zero(self):
-        empty_sessions = watch_history.infer_estimated_sessions(
+        empty_sessions = watch_history.infer_watch_sessions(
             watch_history.create_watch_history_dataframe([])
         )
 
-        statistics = watch_history.get_estimated_session_statistics(
+        statistics = watch_history.get_watch_session_statistics(
             empty_sessions
         )
 
@@ -216,18 +216,18 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
         )
 
     def test_average_sessions_per_active_day(self):
-        sessions = watch_history.infer_estimated_sessions(self.watch_history_df)
+        sessions = watch_history.infer_watch_sessions(self.watch_history_df)
 
         self.assertEqual(
-            watch_history.get_average_sessions_per_active_day(sessions, 3),
+            watch_history.get_average_watch_sessions_per_active_day(sessions, 3),
             1.0,
         )
         self.assertEqual(
-            watch_history.get_average_sessions_per_active_day(sessions, 0),
+            watch_history.get_average_watch_sessions_per_active_day(sessions, 0),
             0.0,
         )
         with self.assertRaisesRegex(ValueError, 'cannot be negative'):
-            watch_history.get_average_sessions_per_active_day(sessions, -1)
+            watch_history.get_average_watch_sessions_per_active_day(sessions, -1)
 
 
 if __name__ == '__main__':

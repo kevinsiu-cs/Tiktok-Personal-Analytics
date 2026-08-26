@@ -1,4 +1,4 @@
-from services.file_services import SECTION_PATHS
+from services import file_services
 
 
 WATCH_HISTORY_FIELDS = ('Date',)
@@ -13,7 +13,7 @@ def get_watch_history(data: dict | None) -> list[dict]:
 
     curr = data
 
-    for key in SECTION_PATHS['watch_history']:
+    for key in file_services.SECTION_PATHS['watch_history']:
         curr = curr[key]
 
     watch_history = []
@@ -36,7 +36,7 @@ def get_login_history(data: dict | None) -> list[dict]:
 
     curr = data
 
-    for key in SECTION_PATHS['login_history']:
+    for key in file_services.SECTION_PATHS['login_history']:
         curr = curr[key]
 
     login_history = []

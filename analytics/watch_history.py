@@ -65,7 +65,7 @@ def get_last_watch_datetime(
     return watch_history_df['Date'].max()
 
 #to-be-deleted.
-def get_calendar_days_covered(watch_history_df: pd.DataFrame) -> int:
+def get_watch_calendar_days_covered(watch_history_df: pd.DataFrame) -> int:
     if watch_history_df.empty:
         return 0
 
@@ -74,26 +74,26 @@ def get_calendar_days_covered(watch_history_df: pd.DataFrame) -> int:
     return (last_date - first_date).days + 1
 
 
-def get_hourly_counts(watch_history_df: pd.DataFrame) -> pd.Series:
+def get_watch_hourly_counts(watch_history_df: pd.DataFrame) -> pd.Series:
     return watch_history_df['Hour'].value_counts().reindex(
         range(24),
         fill_value=0,
     )
 
-def get_daily_counts(watch_history_df: pd.DataFrame) -> pd.Series:
+def get_watch_daily_counts(watch_history_df: pd.DataFrame) -> pd.Series:
     if watch_history_df.empty:
         return pd.Series(dtype='int64')
 
     return watch_history_df.resample('D', on='Date').size()
 
-def get_weekday_counts(watch_history_df: pd.DataFrame) -> pd.Series:
+def get_watch_weekday_counts(watch_history_df: pd.DataFrame) -> pd.Series:
     return watch_history_df['Day'].value_counts().reindex(
         WEEKDAY_ORDER,
         fill_value=0,
     )
 
 
-def get_weekly_counts(watch_history_df: pd.DataFrame) -> pd.Series:
+def get_watch_weekly_counts(watch_history_df: pd.DataFrame) -> pd.Series:
     if watch_history_df.empty:
         return pd.Series(dtype='int64')
 
@@ -105,21 +105,21 @@ def get_weekly_counts(watch_history_df: pd.DataFrame) -> pd.Series:
     ).size()
 
 
-def get_monthly_counts(watch_history_df: pd.DataFrame) -> pd.Series:
+def get_watch_monthly_counts(watch_history_df: pd.DataFrame) -> pd.Series:
     if watch_history_df.empty:
         return pd.Series(dtype='int64')
 
     return watch_history_df.resample('MS', on='Date').size()
 
 
-def get_active_days(watch_history_df: pd.DataFrame) -> int:
-    return int((get_daily_counts(watch_history_df) > 0).sum())
+def get_watch_active_days(watch_history_df: pd.DataFrame) -> int:
+    return int((get_watch_daily_counts(watch_history_df) > 0).sum())
 
 
-def get_daily_activity_statistics(
+def get_watch_daily_activity_statistics(
     watch_history_df: pd.DataFrame,
 ) -> dict[str, float | int]:
-    active_daily_counts = get_daily_counts(watch_history_df)
+    active_daily_counts = get_watch_daily_counts(watch_history_df)
     active_daily_counts = active_daily_counts[active_daily_counts > 0]
 
     if active_daily_counts.empty:
@@ -136,7 +136,7 @@ def get_daily_activity_statistics(
     }
 
 
-def get_weekday_weekend_activity(
+def get_watch_weekday_weekend_activity(
     watch_history_df: pd.DataFrame,
 ) -> dict[str, int | float]:
 
@@ -160,7 +160,7 @@ def get_weekday_weekend_activity(
     }
 
 
-def get_late_night_activity_percentage(
+def get_watch_late_night_activity_percentage(
     watch_history_df: pd.DataFrame,
     start_hour: int = DEFAULT_LATE_NIGHT_START_HOUR,
     end_hour: int = DEFAULT_LATE_NIGHT_END_HOUR,
@@ -186,7 +186,7 @@ def get_late_night_activity_percentage(
     return float(late_night_events.mean() * 100)
 
 
-def get_daily_usage_trend(
+def get_watch_daily_usage_trend(
     watch_history_df: pd.DataFrame,
     stable_threshold: float = 0.01,
 ) -> dict[str, float | str]:
@@ -194,7 +194,7 @@ def get_daily_usage_trend(
     if stable_threshold < 0:
         raise ValueError('Stable threshold cannot be negative')
 
-    daily_counts = get_daily_counts(watch_history_df).astype(float)
+    daily_counts = get_watch_daily_counts(watch_history_df).astype(float)
 
 
     """
@@ -230,7 +230,7 @@ def get_daily_usage_trend(
             'direction': direction}
 
 
-def infer_estimated_sessions(
+def infer_watch_sessions(
     watch_history_df: pd.DataFrame,
     inactivity_threshold: pd.Timedelta = DEFAULT_SESSION_INACTIVITY_THRESHOLD,
 ) -> pd.DataFrame:
@@ -272,7 +272,7 @@ def infer_estimated_sessions(
     return sessions[session_columns]
 
 
-def get_estimated_session_statistics(
+def get_watch_session_statistics(
     estimated_sessions_df: pd.DataFrame,
 ) -> dict[str, int | float | pd.Timedelta]:
     """Summarise sessions inferred from observed Watch History timestamps."""
@@ -305,7 +305,7 @@ def get_estimated_session_statistics(
     }
 
 
-def get_average_sessions_per_active_day(
+def get_average_watch_sessions_per_active_day(
     estimated_sessions_df: pd.DataFrame,
     active_days: int,
 ) -> float:
@@ -331,12 +331,12 @@ def create_watch_history_summary(
     late_night_start_hour: int = DEFAULT_LATE_NIGHT_START_HOUR,
     late_night_end_hour: int = DEFAULT_LATE_NIGHT_END_HOUR,
 ) -> dict[str, object]:
-    hourly_counts = get_hourly_counts(watch_history_df)
-    daily_counts = get_daily_counts(watch_history_df)
-    weekday_counts = get_weekday_counts(watch_history_df)
-    weekly_counts = get_weekly_counts(watch_history_df)
-    monthly_counts = get_monthly_counts(watch_history_df)
-    estimated_sessions = infer_estimated_sessions(
+    hourly_counts = get_watch_hourly_counts(watch_history_df)
+    daily_counts = get_watch_daily_counts(watch_history_df)
+    weekday_counts = get_watch_weekday_counts(watch_history_df)
+    weekly_counts = get_watch_weekly_counts(watch_history_df)
+    monthly_counts = get_watch_monthly_counts(watch_history_df)
+    estimated_sessions = infer_watch_sessions(
         watch_history_df,
         inactivity_threshold,
     )
@@ -356,23 +356,25 @@ def create_watch_history_summary(
         'total_videos_watched': get_total_videos_watched(watch_history_df),
         'first_watch_datetime': get_first_watch_datetime(watch_history_df),
         'last_watch_datetime': get_last_watch_datetime(watch_history_df),
-        'calendar_days_covered': get_calendar_days_covered(watch_history_df),
-        'active_days': get_active_days(watch_history_df),
-        'weekday_weekend_activity': get_weekday_weekend_activity(
+        'calendar_days_covered': get_watch_calendar_days_covered(
             watch_history_df
         ),
-        'late_night_activity_percentage': get_late_night_activity_percentage(
+        'active_days': get_watch_active_days(watch_history_df),
+        'weekday_weekend_activity': get_watch_weekday_weekend_activity(
+            watch_history_df
+        ),
+        'late_night_activity_percentage': get_watch_late_night_activity_percentage(
             watch_history_df,
             late_night_start_hour,
             late_night_end_hour,
         ),
-        'daily_usage_trend': get_daily_usage_trend(watch_history_df),
+        'daily_usage_trend': get_watch_daily_usage_trend(watch_history_df),
         'estimated_sessions': estimated_sessions,
     }
-    summary.update(get_daily_activity_statistics(watch_history_df))
-    summary.update(get_estimated_session_statistics(estimated_sessions))
+    summary.update(get_watch_daily_activity_statistics(watch_history_df))
+    summary.update(get_watch_session_statistics(estimated_sessions))
     summary['average_sessions_per_active_day'] = (
-        get_average_sessions_per_active_day(
+        get_average_watch_sessions_per_active_day(
             estimated_sessions,
             summary['active_days'],
         )

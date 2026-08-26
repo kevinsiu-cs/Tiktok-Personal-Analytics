@@ -1,6 +1,6 @@
 import unittest
 
-from services.analytics_services import get_login_history, get_watch_history
+from services import analytics_services
 
 
 class WatchHistoryExtractionTests(unittest.TestCase):
@@ -20,7 +20,7 @@ class WatchHistoryExtractionTests(unittest.TestCase):
             }
         }
 
-        records = get_watch_history(data)
+        records = analytics_services.get_watch_history(data)
 
         self.assertEqual(records, [{'Date': '2026-01-01 10:00:00'}])
 
@@ -33,7 +33,7 @@ class WatchHistoryExtractionTests(unittest.TestCase):
             }
         }
 
-        self.assertEqual(get_watch_history(data), [])
+        self.assertEqual(analytics_services.get_watch_history(data), [])
 
     def test_missing_watch_date_is_returned_as_none(self):
         data = {
@@ -44,11 +44,14 @@ class WatchHistoryExtractionTests(unittest.TestCase):
             }
         }
 
-        self.assertEqual(get_watch_history(data), [{'Date': None}])
+        self.assertEqual(
+            analytics_services.get_watch_history(data),
+            [{'Date': None}],
+        )
 
     def test_none_watch_data_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'TikTok data cannot be empty'):
-            get_watch_history(None)
+            analytics_services.get_watch_history(None)
 
 
 class LoginHistoryExtractionTests(unittest.TestCase):
@@ -69,7 +72,7 @@ class LoginHistoryExtractionTests(unittest.TestCase):
             }
         }
 
-        records = get_login_history(data)
+        records = analytics_services.get_login_history(data)
 
         self.assertEqual(records, [{
             'Date': '2026-01-01 10:00:00',
@@ -85,7 +88,7 @@ class LoginHistoryExtractionTests(unittest.TestCase):
             }
         }
 
-        self.assertEqual(get_login_history(data), [])
+        self.assertEqual(analytics_services.get_login_history(data), [])
 
     def test_missing_login_fields_are_returned_as_none(self):
         data = {
@@ -96,14 +99,14 @@ class LoginHistoryExtractionTests(unittest.TestCase):
             }
         }
 
-        self.assertEqual(get_login_history(data), [{
+        self.assertEqual(analytics_services.get_login_history(data), [{
             'Date': None,
             'NetworkType': None,
         }])
 
     def test_none_login_data_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'TikTok data cannot be empty'):
-            get_login_history(None)
+            analytics_services.get_login_history(None)
 
 
 if __name__ == '__main__':
