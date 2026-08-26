@@ -23,44 +23,46 @@ function showFileError(message) {
     fileError.hidden = false;
 }
 
-fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
+if (fileInput && uploadArea) {
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
 
-    if (!file) {
-        selectedFileName.textContent = 'None';
-        selectedFile.hidden = false;
-        return;
-    }
+        if (!file) {
+            selectedFileName.textContent = 'None';
+            selectedFile.hidden = false;
+            return;
+        }
 
-    if (!isZipFile(file)) {
-        showFileError('Please select a ZIP file.');
-        return;
-    }
+        if (!isZipFile(file)) {
+            showFileError('Please select a ZIP file.');
+            return;
+        }
 
-    showSelectedFile(file);
-});
+        showSelectedFile(file);
+    });
 
-uploadArea.addEventListener('dragover', (event) => {
-    event.preventDefault();
-});
+    uploadArea.addEventListener('dragover', (event) => {
+        event.preventDefault();
+    });
 
-uploadArea.addEventListener('drop', (event) => {
-    event.preventDefault();
+    uploadArea.addEventListener('drop', (event) => {
+        event.preventDefault();
 
-    const files = event.dataTransfer.files;
+        const files = event.dataTransfer.files;
 
-    if (files.length !== 1) {
-        showFileError('Please drop one ZIP file at a time.');
-        return;
-    }
+        if (files.length !== 1) {
+            showFileError('Please drop one ZIP file at a time.');
+            return;
+        }
 
-    const file = files[0];
+        const file = files[0];
 
-    if (!isZipFile(file)) {
-        showFileError('Please select a ZIP file.');
-        return;
-    }
+        if (!isZipFile(file)) {
+            showFileError('Please select a ZIP file.');
+            return;
+        }
 
-    fileInput.files = files;
-    showSelectedFile(file);
-});
+        fileInput.files = files;
+        showSelectedFile(file);
+    });
+}

@@ -143,6 +143,9 @@ def create_login_history_summary(
         'average_logins_per_active_day': (
             get_average_logins_per_active_day(login_history_df)
         ),
+        'maximum_logins_in_one_day': (
+            int(daily_counts.max()) if not daily_counts.empty else 0
+        ),
         'network_type_counts': get_network_type_counts(login_history_df),
         'network_type_percentages': get_network_type_percentages(
             login_history_df

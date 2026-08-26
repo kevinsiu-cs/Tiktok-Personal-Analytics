@@ -38,6 +38,7 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
         self.assertEqual(summary['total_login_events'], 3)
         self.assertEqual(summary['most_active_login_hour'], 8)
         self.assertEqual(summary['average_logins_per_active_day'], 1.5)
+        self.assertEqual(summary['maximum_logins_in_one_day'], 2)
         self.assertEqual(summary['network_type_counts']['Wi-Fi'], 1)
         self.assertEqual(summary['network_type_counts']['Cellular'], 1)
         self.assertEqual(summary['network_type_counts']['Other'], 1)
@@ -154,6 +155,7 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
         summary = login_history.create_login_history_summary(dataframe)
 
         self.assertEqual(summary['total_login_events'], 0)
+        self.assertEqual(summary['maximum_logins_in_one_day'], 0)
         self.assertIsNone(summary['most_active_login_hour'])
         self.assertIsNone(summary['most_active_login_weekday'])
 

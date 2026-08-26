@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wasted on TikTok</title>
+    <title>Doomscrolled On TikTok</title>
     <link
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
@@ -12,16 +12,42 @@
 </head>
 
 <body>
-    <main>
-        <h1>Wasted on TikTok</h1>
+    <main class="page-shell">
+        <nav class="social-links" aria-label="Project and profile links">
+            <a
+                href="https://github.com/kevinsiu-cs/Tiktok-Personal-Analytics"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="View this project on GitHub"
+            >
+                <img
+                    src="{{ url_for('static', filename='images/github_logo.png') }}"
+                    alt=""
+                >
+            </a>
+            <a
+                href="https://www.linkedin.com/in/kevin-siu-cs/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="View Kevin Siu's LinkedIn profile"
+            >
+                <img
+                    src="{{ url_for('static', filename='images/linkedin_logo.png') }}"
+                    alt=""
+                >
+            </a>
+        </nav>
+
+        <header class="site-header">
+            <p class="eyebrow">Your personal recap</p>
+            <h1>Doomscrolled On TikTok</h1>
+            <p class="site-subtitle">
+                Explore patterns in your TikTok viewing activity.
+            </p>
+        </header>
 
         {% if not charts %}
-            <section class="upload-section" aria-label="Upload TikTok data">
-                <p>
-                    Upload your TikTok data export to analyse your viewing
-                    behaviour.
-                </p>
-
+            <section class="upload-section dashboard-card" aria-label="Upload TikTok data">
                 <form
                     class="upload-form"
                     method="POST"
@@ -29,11 +55,11 @@
                 >
                     {{ form.hidden_tag() }}
 
-                    <p id="selected-file" aria-live="polite">
+                    <p id="selected-file" class="selected-file" aria-live="polite">
                         <strong>Uploaded file:</strong>
                         <span id="selected-file-name">None</span>
                     </p>
-                    <p id="file-error" role="alert" hidden></p>
+                    <p id="file-error" class="form-error" role="alert" hidden></p>
 
                     <label class="upload-area" for="tiktok-export">
                         <strong>
@@ -47,7 +73,7 @@
                     </label>
 
                     {% if request_error or form.uploaded_file.errors %}
-                        <ul>
+                        <ul class="error-list">
                             {% if request_error %}
                                 <li>{{ request_error }}</li>
                             {% endif %}
@@ -63,47 +89,146 @@
         {% endif %}
 
         {% if statistics and charts %}
-            <section aria-labelledby="analytics-heading">
-                <h2 id="analytics-heading">Your watch history</h2>
+            <section class="dashboard-section" aria-labelledby="history-heading">
+                <p class="section-kicker">Your complete viewing history</p>
+                <h2 id="history-heading" class="section-heading">
+                    {% if statistics.first_watch_datetime %}
+                        Since {{ statistics.first_watch_datetime.strftime('%d %B %Y') }}
+                    {% else %}
+                        No viewing activity found
+                    {% endif %}
+                </h2>
 
-                <dl>
-                    <div>
-                        <dt>Total videos watched</dt>
-                        <dd>{{ statistics.total_videos }}</dd>
+                <dl class="stat-grid stat-grid--hero">
+                    <div class="stat-card stat-card--accent">
+                        <dd>{{ '{:,}'.format(statistics.total_videos_watched) }}</dd>
+                        <dt>Videos watched</dt>
                     </div>
-                    <div>
+                    <div class="stat-card">
+                        <dd>{{ '{:,}'.format(statistics.active_days) }}</dd>
                         <dt>Active days</dt>
-                        <dd>{{ statistics.active_days }}</dd>
                     </div>
-                    <div>
-                        <dt>Average videos per active day</dt>
-                        <dd>
-                            {{ '%.1f'|format(statistics.average_per_active_day) }}
-                        </dd>
+                    <div class="stat-card">
+                        <dd>{{ '{:,}'.format(statistics.number_of_estimated_sessions) }}</dd>
+                        <dt>Estimated sessions</dt>
                     </div>
                 </dl>
-
-                <figure>
-                    <img
-                        src="data:image/png;base64,{{ charts.hourly }}"
-                        alt="Bar chart showing videos watched by hour of day"
-                    >
-                </figure>
-
-                <figure>
-                    <img
-                        src="data:image/png;base64,{{ charts.monthly }}"
-                        alt="Line chart showing the number of videos watched each month"
-                    >
-                </figure>
-
-                <figure>
-                    <img
-                        src="data:image/png;base64,{{ charts.weekday }}"
-                        alt="Pie chart showing the percentage of videos watched by weekday"
-                    >
-                </figure>
             </section>
+
+            <section class="dashboard-section" aria-labelledby="perspective-heading">
+                <h2 id="perspective-heading" class="section-heading">
+                    Your viewing in perspective
+                </h2>
+                <dl class="stat-grid stat-grid--four">
+                    <div class="stat-card">
+                        <dd>{{ '%.1f'|format(statistics.average_videos_per_active_day) }}</dd>
+                        <dt>Videos per active day</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ '%.1f'|format(statistics.average_videos_per_session) }}</dd>
+                        <dt>Videos per session</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ '%.1f'|format(statistics.average_sessions_per_active_day) }}</dd>
+                        <dt>Sessions per active day</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ statistics.average_session_duration_display }}</dd>
+                        <dt>Average observed session</dt>
+                    </div>
+                </dl>
+                <p class="section-note">
+                    Session duration is estimated from the time between observed
+                    viewing events and does not represent exact screen time.
+                </p>
+            </section>
+
+            <section class="dashboard-section" aria-labelledby="records-heading">
+                <h2 id="records-heading" class="section-heading">Your records</h2>
+                <dl class="stat-grid stat-grid--records">
+                    {% if statistics.most_active_day %}
+                        <div class="stat-card">
+                            <dd>{{ '{:,}'.format(statistics.maximum_videos_in_one_day) }} videos</dd>
+                            <dt>Busiest day</dt>
+                            <span>{{ statistics.most_active_day.strftime('%d %B %Y') }}</span>
+                        </div>
+                    {% endif %}
+                    <div class="stat-card">
+                        <dd>{{ statistics.longest_session_duration_display }}</dd>
+                        <dt>Longest observed session</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ '{:,}'.format(statistics.maximum_videos_in_one_session) }} videos</dd>
+                        <dt>Most videos in one session</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ statistics.most_active_hour_display }}</dd>
+                        <dt>Most active hour</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ statistics.most_active_weekday }}</dd>
+                        <dt>Most active weekday</dt>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="dashboard-section" aria-labelledby="activity-heading">
+                <h2 id="activity-heading" class="section-heading">Activity over time</h2>
+                <div class="chart-grid">
+                    <figure class="chart-card chart-card--wide">
+                        <figcaption>Daily viewing activity</figcaption>
+                        <img src="data:image/png;base64,{{ charts.daily }}" alt="Line chart showing daily viewing activity">
+                    </figure>
+                    <figure class="chart-card">
+                        <figcaption>Viewing activity by hour</figcaption>
+                        <img src="data:image/png;base64,{{ charts.hourly }}" alt="Bar chart showing videos watched by hour of day">
+                    </figure>
+                    <figure class="chart-card">
+                        <figcaption>Viewing activity by weekday</figcaption>
+                        <img src="data:image/png;base64,{{ charts.weekday }}" alt="Pie chart showing the share of videos watched by weekday">
+                    </figure>
+                    <figure class="chart-card">
+                        <figcaption>Weekly viewing activity</figcaption>
+                        <img src="data:image/png;base64,{{ charts.weekly }}" alt="Line chart showing weekly viewing activity">
+                    </figure>
+                    <figure class="chart-card">
+                        <figcaption>Monthly viewing activity</figcaption>
+                        <img src="data:image/png;base64,{{ charts.monthly }}" alt="Line chart showing monthly viewing activity">
+                    </figure>
+                </div>
+            </section>
+
+            {% if login_statistics and charts.login_daily %}
+                <section class="dashboard-section dashboard-section--secondary" aria-labelledby="login-heading">
+                    <h2 id="login-heading" class="section-heading">Login activity</h2>
+                    <dl class="stat-grid stat-grid--records">
+                        <div class="stat-card">
+                            <dd>{{ '{:,}'.format(login_statistics.total_login_events) }}</dd>
+                            <dt>Total login events</dt>
+                        </div>
+                        <div class="stat-card">
+                            <dd>{{ '%.1f'|format(login_statistics.average_logins_per_active_day) }}</dd>
+                            <dt>Logins per active day</dt>
+                        </div>
+                        <div class="stat-card">
+                            <dd>{{ '{:,}'.format(login_statistics.maximum_logins_in_one_day) }}</dd>
+                            <dt>Most logins in one day</dt>
+                        </div>
+                        <div class="stat-card">
+                            <dd>{{ login_statistics.most_active_hour_display }}</dd>
+                            <dt>Most active login hour</dt>
+                        </div>
+                        <div class="stat-card">
+                            <dd>{{ login_statistics.most_active_login_weekday }}</dd>
+                            <dt>Most active login weekday</dt>
+                        </div>
+                    </dl>
+                    <figure class="chart-card chart-card--login">
+                        <figcaption>Daily login activity</figcaption>
+                        <img src="data:image/png;base64,{{ charts.login_daily }}" alt="Line chart showing daily login activity">
+                    </figure>
+                </section>
+            {% endif %}
         {% endif %}
 
     </main>
