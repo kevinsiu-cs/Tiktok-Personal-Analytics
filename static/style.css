@@ -187,6 +187,11 @@ h1 {
     background: #121d2d;
 }
 
+.upload-area.is-processing {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
 .upload-area span {
     display: inline-block;
     margin-top: 0.5rem;
@@ -216,6 +221,60 @@ h1 {
 
 .submit-button:hover {
     background: #e92349;
+}
+
+.submit-button:disabled {
+    background: #7d3043;
+    cursor: wait;
+}
+
+.upload-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9rem;
+    color: var(--text);
+}
+
+.upload-loading[hidden] {
+    display: none;
+}
+
+.upload-loading p {
+    margin: 0;
+}
+
+.upload-loading strong,
+.upload-loading p span {
+    display: block;
+}
+
+.upload-loading p span {
+    margin-top: 0.2rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.loading-spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: 0 0 auto;
+    border: 3px solid #526078;
+    border-top-color: var(--cyan);
+    border-radius: 50%;
+    animation: loading-spin 700ms linear infinite;
+}
+
+@keyframes loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+        animation-duration: 1.5s;
+    }
 }
 
 .reset-button {

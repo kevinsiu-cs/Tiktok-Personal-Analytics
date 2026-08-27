@@ -15,9 +15,11 @@ WEEKDAY_ORDER = [
 ]
 
 
-def create_watch_history_dataframe(watch_history: list[dict]) -> pd.DataFrame:
+def create_watch_history_dataframe(
+    watch_history_dates: list[object],
+) -> pd.DataFrame:
 
-    watch_history_df = pd.DataFrame(watch_history, columns=['Date'])
+    watch_history_df = pd.DataFrame({'Date': watch_history_dates})
 
     if 'Date' not in watch_history_df.columns:
         raise ValueError('Watch History is missing Date Column')

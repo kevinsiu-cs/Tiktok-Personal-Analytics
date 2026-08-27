@@ -9,21 +9,16 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
 
     def setUp(self):
         records = [
-            {'Date': '2026-01-01 08:00:00'},
-            {'Date': '2026-01-01 08:30:00'},
-            {'Date': '2026-01-02 09:00:00'},
+            '2026-01-01 08:00:00',
+            '2026-01-01 08:30:00',
+            '2026-01-02 09:00:00',
         ]
         self.login_history_df = (
             login_history.create_login_history_dataframe(records)
         )
 
-    def test_dataframe_contains_only_allowlisted_columns(self):
-        records = [
-            {
-                'Date': '2026-01-01 08:00:00',
-                'IP': '192.0.2.1',
-            }
-        ]
+    def test_dataframe_contains_only_date_column(self):
+        records = ['2026-01-01 08:00:00']
 
         dataframe = login_history.create_login_history_dataframe(records)
 
@@ -41,8 +36,8 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
 
     def test_dataframe_drops_invalid_dates(self):
         records = [
-            {'Date': '2026-01-01 08:00:00'},
-            {'Date': 'invalid'},
+            '2026-01-01 08:00:00',
+            'invalid',
         ]
 
         dataframe = login_history.create_login_history_dataframe(records)
@@ -76,9 +71,9 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
 
     def test_average_logins_ignores_inactive_days(self):
         records = [
-            {'Date': '2026-01-01 08:00:00'},
-            {'Date': '2026-01-03 08:00:00'},
-            {'Date': '2026-01-03 09:00:00'},
+            '2026-01-01 08:00:00',
+            '2026-01-03 08:00:00',
+            '2026-01-03 09:00:00',
         ]
         dataframe = login_history.create_login_history_dataframe(records)
 

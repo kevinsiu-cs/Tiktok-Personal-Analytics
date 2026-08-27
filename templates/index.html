@@ -12,7 +12,12 @@
 </head>
 
 <body>
-    <main class="page-shell">
+    <main
+        class="page-shell"
+        {% if statistics and charts %}
+            data-refresh-url="{{ url_for('index') }}"
+        {% endif %}
+    >
         <div class="top-actions">
             <nav class="social-links" aria-label="Project and profile links">
                 <a
@@ -94,7 +99,25 @@
                         </ul>
                     {% endif %}
 
-                    {{ form.submit(class_="submit-button") }}
+                    {{ form.submit(
+                        class_="submit-button",
+                        id="upload-submit"
+                    ) }}
+
+                    <div
+                        id="upload-loading"
+                        class="upload-loading"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        hidden
+                    >
+                        <span class="loading-spinner" aria-hidden="true"></span>
+                        <p>
+                            <strong>Processing your TikTok data...</strong>
+                            <span>Larger exports may take a few seconds.</span>
+                        </p>
+                    </div>
                 </form>
             </section>
 

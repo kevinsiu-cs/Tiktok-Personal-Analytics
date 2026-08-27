@@ -8,9 +8,7 @@ from dotenv import load_dotenv
 
 from wtforms import SubmitField
 
-from analytics import login_history, watch_history
-from services import analytics_services, file_services
-from visualisations import matplotlib_charts
+from services import dashboard_service, file_services
 
 
 load_dotenv()
@@ -18,27 +16,6 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MiB
-
-
-def format_duration(duration) -> str:
-    """Format an observed session duration for concise dashboard display."""
-    total_minutes = int(duration.total_seconds() // 60)
-    hours, minutes = divmod(total_minutes, 60)
-
-    if hours:
-        return f'{hours} h {minutes} min'
-
-    return f'{minutes} min'
-
-
-def format_hour(hour: int | None) -> str:
-    """Format a 24-hour integer as a familiar dashboard label."""
-    if hour is None:
-        return '—'
-
-    suffix = 'AM' if hour < 12 else 'PM'
-    display_hour = hour % 12 or 12
-    return f'{display_hour} {suffix}'
 
 
 class UploadFileForm(FlaskForm):
@@ -56,8 +33,7 @@ class UploadFileForm(FlaskForm):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     form = UploadFileForm()
-    statistics = None
-    charts = None
+    dashboard = None
 
     if form.validate_on_submit():
         uploaded_file = form.uploaded_file.data
@@ -68,92 +44,20 @@ def index():
         if not is_valid:
             form.uploaded_file.errors.append(error_message)
         else:
-            is_valid, error_message, data = (
-                file_services.validate_tiktok_archive(uploaded_file)
+            is_valid, error_message, dashboard = (
+                dashboard_service.process_tiktok_upload(uploaded_file)
             )
 
             if not is_valid:
                 form.uploaded_file.errors.append(error_message)
-            else:
-                watch_history_records = analytics_services.get_watch_history(
-                    data
-                )
-                watch_history_df = watch_history.create_watch_history_dataframe(
-                    watch_history_records
-                )
-                watch_history_df = watch_history.add_watch_history_features(
-                    watch_history_df
-                )
-
-                statistics = watch_history.create_watch_history_summary(
-                    watch_history_df
-                )
-                statistics['average_session_duration_display'] = (
-                    format_duration(
-                        statistics['average_estimated_session_duration']
-                    )
-                )
-                statistics['longest_session_duration_display'] = (
-                    format_duration(
-                        statistics['longest_estimated_session_duration']
-                    )
-                )
-                statistics['most_active_hour_display'] = format_hour(
-                    statistics['most_active_hour']
-                )
-
-                figures = {
-                    'hourly': matplotlib_charts.create_hourly_chart(
-                        statistics['hourly_counts']
-                    ),
-                    'daily': matplotlib_charts.create_daily_chart(
-                        statistics['daily_counts']
-                    ),
-                    'weekly': matplotlib_charts.create_weekly_chart(
-                        statistics['weekly_counts']
-                    ),
-                    'monthly': matplotlib_charts.create_monthly_chart(
-                        statistics['monthly_counts']
-                    ),
-                    'weekday': matplotlib_charts.create_weekday_chart(
-                        statistics['weekday_counts']
-                    ),
-                }
-
-                login_history_records = analytics_services.get_login_history(
-                    data
-                )
-                login_history_df = login_history.create_login_history_dataframe(
-                    login_history_records
-                )
-                login_statistics = login_history.create_login_history_summary(
-                    login_history_df
-                )
-                login_statistics['most_active_hour_display'] = format_hour(
-                    login_statistics['most_active_login_hour']
-                )
-
-                if not login_history_df.empty:
-                    figures['login_daily'] = (
-                        matplotlib_charts.create_daily_login_chart(
-                            login_statistics['daily_counts']
-                        )
-                    )
-
-                charts = {}
-                for chart_name, figure in figures.items():
-                    buffer = matplotlib_charts.figure_to_buffer(figure)
-                    charts[chart_name] = (
-                        matplotlib_charts.buffer_to_base64(buffer)
-                    )
 
     return render_template(
         'index.html',
         form=form,
-        statistics=statistics,
-        charts=charts,
+        statistics=(dashboard['statistics'] if dashboard else None),
+        charts=(dashboard['charts'] if dashboard else None),
         login_statistics=(
-            login_statistics if statistics is not None else None
+            dashboard['login_statistics'] if dashboard else None
         ),
     )
 

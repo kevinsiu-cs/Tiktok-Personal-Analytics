@@ -1,11 +1,10 @@
 import pandas as pd
 
 
-def create_login_history_dataframe(login_history: list[dict]) -> pd.DataFrame:
-    login_history_df = pd.DataFrame(
-        login_history,
-        columns=['Date'],
-    )
+def create_login_history_dataframe(
+    login_history_dates: list[object],
+) -> pd.DataFrame:
+    login_history_df = pd.DataFrame({'Date': login_history_dates})
 
     if 'Date' not in login_history_df.columns:
         raise ValueError('Login History is missing Date Column')

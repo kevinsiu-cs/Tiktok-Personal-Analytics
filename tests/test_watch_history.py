@@ -9,10 +9,10 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
 
     def setUp(self):
         records = [
-            {'Date': '2026-01-01 23:50:00', 'Link': 'unused'},
-            {'Date': '2026-01-02 00:20:00', 'Link': 'unused'},
-            {'Date': '2026-01-02 01:00:01', 'Link': 'unused'},
-            {'Date': '2026-01-04 12:00:00', 'Link': 'unused'},
+            '2026-01-01 23:50:00',
+            '2026-01-02 00:20:00',
+            '2026-01-02 01:00:01',
+            '2026-01-04 12:00:00',
         ]
         dataframe = watch_history.create_watch_history_dataframe(records)
         self.watch_history_df = watch_history.add_watch_history_features(
@@ -55,10 +55,10 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
         self.assertEqual(summary['average_sessions_per_active_day'], 1.0)
         self.assertEqual(summary['late_night_activity_percentage'], 50.0)
 
-    def test_dataframe_drops_invalid_dates_and_private_columns(self):
+    def test_dataframe_drops_invalid_dates(self):
         records = [
-            {'Date': '2026-01-01 10:00:00', 'Link': 'private'},
-            {'Date': 'not a date', 'Link': 'private'},
+            '2026-01-01 10:00:00',
+            'not a date',
         ]
 
         dataframe = watch_history.create_watch_history_dataframe(records)
@@ -69,7 +69,7 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
 
     def test_features_are_added_without_modifying_original_dataframe(self):
         dataframe = watch_history.create_watch_history_dataframe([
-            {'Date': '2026-01-03 14:00:00'},
+            '2026-01-03 14:00:00',
         ])
 
         featured = watch_history.add_watch_history_features(dataframe)
@@ -150,12 +150,12 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
 
     def test_daily_usage_trend_detects_increase(self):
         records = [
-            {'Date': '2026-01-01 10:00:00'},
-            {'Date': '2026-01-02 10:00:00'},
-            {'Date': '2026-01-02 11:00:00'},
-            {'Date': '2026-01-03 10:00:00'},
-            {'Date': '2026-01-03 11:00:00'},
-            {'Date': '2026-01-03 12:00:00'},
+            '2026-01-01 10:00:00',
+            '2026-01-02 10:00:00',
+            '2026-01-02 11:00:00',
+            '2026-01-03 10:00:00',
+            '2026-01-03 11:00:00',
+            '2026-01-03 12:00:00',
         ]
         dataframe = watch_history.create_watch_history_dataframe(records)
 

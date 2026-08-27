@@ -18,7 +18,6 @@ class TikTokStructureValidationTests(unittest.TestCase):
                     'VideoList': [
                         {
                             'Date': '2026-01-01 10:00:00',
-                            'Link': 'https://example.com/video',
                         }
                     ],
                 },
@@ -181,7 +180,6 @@ class TikTokRequiredFieldsValidationTests(unittest.TestCase):
                     'VideoList': [
                         {
                             'Date': '2026-01-01 10:00:00',
-                            'Link': 'https://example.com/video',
                         }
                     ],
                 },
@@ -221,36 +219,6 @@ class TikTokRequiredFieldsValidationTests(unittest.TestCase):
         self.assertIsNone(error)
 
     def test_watch_record_missing_date_is_rejected(self):
-        self.valid_data['Your Activity']['Watch History']['VideoList'][0] = {
-            'Link': 'https://example.com/video',
-        }
-
-        is_valid, error = file_services.validate_tiktok_required_fields(
-            self.valid_data
-        )
-
-        self.assertFalse(is_valid)
-        self.assertEqual(
-            error,
-            'Missing required field(s) in watch_history: Date.',
-        )
-
-    def test_watch_record_missing_link_is_rejected(self):
-        self.valid_data['Your Activity']['Watch History']['VideoList'][0] = {
-            'Date': '2026-01-01 10:00:00',
-        }
-
-        is_valid, error = file_services.validate_tiktok_required_fields(
-            self.valid_data
-        )
-
-        self.assertFalse(is_valid)
-        self.assertEqual(
-            error,
-            'Missing required field(s) in watch_history: Link.',
-        )
-
-    def test_watch_record_missing_multiple_fields_is_rejected(self):
         self.valid_data['Your Activity']['Watch History']['VideoList'][0] = {}
 
         is_valid, error = file_services.validate_tiktok_required_fields(
@@ -260,7 +228,7 @@ class TikTokRequiredFieldsValidationTests(unittest.TestCase):
         self.assertFalse(is_valid)
         self.assertEqual(
             error,
-            'Missing required field(s) in watch_history: Date, Link.',
+            'Missing required field(s) in watch_history: Date.',
         )
 
     def test_login_record_missing_date_is_rejected(self):
@@ -328,7 +296,7 @@ class ZipArchiveValidationTests(unittest.TestCase):
             'Your Activity': {
                 'Watch History': {
                     'VideoList': [
-                        {'Date': '2026-01-01 10:00:00', 'Link': 'video'}
+                        {'Date': '2026-01-01 10:00:00'}
                     ],
                 },
                 'Login History': {
@@ -375,9 +343,13 @@ class ZipArchiveValidationTests(unittest.TestCase):
         )
 
     def test_valid_tiktok_archive_returns_parsed_data(self):
-        expected_data = self.valid_tiktok_data()
+        tiktok_data = self.valid_tiktok_data()
+        expected_data = {
+            'watch_history': ['2026-01-01 10:00:00'],
+            'login_history': ['2026-01-01 10:00:00'],
+        }
         uploaded_file = self.create_upload({
-            'user_data_tiktok.json': json.dumps(expected_data).encode(),
+            'user_data_tiktok.json': json.dumps(tiktok_data).encode(),
         })
 
         is_valid, error, data = file_services.validate_tiktok_archive(
@@ -387,6 +359,53 @@ class ZipArchiveValidationTests(unittest.TestCase):
         self.assertTrue(is_valid)
         self.assertIsNone(error)
         self.assertEqual(data, expected_data)
+
+    def test_empty_history_arrays_are_accepted(self):
+        tiktok_data = self.valid_tiktok_data()
+        tiktok_data['Your Activity']['Watch History']['VideoList'] = []
+        tiktok_data['Your Activity']['Login History'][
+            'LoginHistoryList'
+        ] = []
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(tiktok_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(error)
+        self.assertEqual(data, {
+            'watch_history': [],
+            'login_history': [],
+        })
+
+    def test_extra_record_fields_are_not_returned(self):
+        tiktok_data = self.valid_tiktok_data()
+        watch_record = tiktok_data['Your Activity']['Watch History'][
+            'VideoList'
+        ][0]
+        watch_record['Link'] = 'https://example.com/private-video'
+        watch_record['ExtraPrivateField'] = 'private'
+        login_record = tiktok_data['Your Activity']['Login History'][
+            'LoginHistoryList'
+        ][0]
+        login_record['IP'] = '192.0.2.1'
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(tiktok_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(error)
+        self.assertEqual(data, {
+            'watch_history': ['2026-01-01 10:00:00'],
+            'login_history': ['2026-01-01 10:00:00'],
+        })
 
     def test_archive_missing_tiktok_file_is_rejected(self):
         uploaded_file = self.create_upload({'other.json': b'{}'})
@@ -431,10 +450,42 @@ class ZipArchiveValidationTests(unittest.TestCase):
         )
         self.assertIsNone(data)
 
+    def test_archive_with_invalid_history_array_type_is_rejected(self):
+        invalid_data = self.valid_tiktok_data()
+        invalid_data['Your Activity']['Watch History']['VideoList'] = {}
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(invalid_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(error, 'Invalid data format for watch_history.')
+        self.assertIsNone(data)
+
+    def test_archive_with_non_object_record_is_rejected(self):
+        invalid_data = self.valid_tiktok_data()
+        invalid_data['Your Activity']['Watch History']['VideoList'][0] = (
+            'not a record'
+        )
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(invalid_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(error, 'Invalid record format in watch_history.')
+        self.assertIsNone(data)
+
     def test_archive_with_missing_record_field_is_rejected(self):
         invalid_data = self.valid_tiktok_data()
         invalid_data['Your Activity']['Watch History']['VideoList'][0].pop(
-            'Link'
+            'Date'
         )
         uploaded_file = self.create_upload({
             'user_data_tiktok.json': json.dumps(invalid_data).encode(),
@@ -447,8 +498,42 @@ class ZipArchiveValidationTests(unittest.TestCase):
         self.assertFalse(is_valid)
         self.assertEqual(
             error,
-            'Missing required field(s) in watch_history: Link.',
+            'Missing required field(s) in watch_history: Date.',
         )
+        self.assertIsNone(data)
+
+    def test_archive_with_missing_login_date_is_rejected(self):
+        invalid_data = self.valid_tiktok_data()
+        invalid_data['Your Activity']['Login History'][
+            'LoginHistoryList'
+        ][0].pop('Date')
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(invalid_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required field(s) in login_history: Date.',
+        )
+        self.assertIsNone(data)
+
+    def test_malformed_json_after_valid_sections_is_rejected(self):
+        valid_json = json.dumps(self.valid_tiktok_data()).encode()
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': valid_json + b' trailing garbage',
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(error, 'The TikTok JSON file is invalid.')
         self.assertIsNone(data)
 
 
