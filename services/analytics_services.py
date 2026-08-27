@@ -2,7 +2,7 @@ from services import file_services
 
 
 WATCH_HISTORY_FIELDS = ('Date',)
-LOGIN_HISTORY_FIELDS = ('Date', 'NetworkType')
+LOGIN_HISTORY_FIELDS = ('Date',)
 
 
 # We sanitize and remove unused fields before creating DataFrames so private

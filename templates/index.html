@@ -13,30 +13,41 @@
 
 <body>
     <main class="page-shell">
-        <nav class="social-links" aria-label="Project and profile links">
-            <a
-                href="https://github.com/kevinsiu-cs/Tiktok-Personal-Analytics"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="View this project on GitHub"
-            >
-                <img
-                    src="{{ url_for('static', filename='images/github_logo.png') }}"
-                    alt=""
+        <div class="top-actions">
+            <nav class="social-links" aria-label="Project and profile links">
+                <a
+                    href="https://github.com/kevinsiu-cs/Tiktok-Personal-Analytics"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="View this project on GitHub"
                 >
-            </a>
-            <a
-                href="https://www.linkedin.com/in/kevin-siu-cs/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="View Kevin Siu's LinkedIn profile"
-            >
-                <img
-                    src="{{ url_for('static', filename='images/linkedin_logo.png') }}"
-                    alt=""
+                    <img
+                        src="{{ url_for('static', filename='images/github_logo.png') }}"
+                        alt=""
+                    >
+                </a>
+                <a
+                    href="https://www.linkedin.com/in/kevin-siu-cs/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="View Kevin Siu's LinkedIn profile"
                 >
-            </a>
-        </nav>
+                    <img
+                        src="{{ url_for('static', filename='images/linkedin_logo.png') }}"
+                        alt=""
+                    >
+                </a>
+            </nav>
+
+            {% if statistics and charts %}
+                <a
+                    class="submit-button reset-button"
+                    href="{{ url_for('index') }}"
+                >
+                    Upload another file
+                </a>
+            {% endif %}
+        </div>
 
         <header class="site-header">
             <p class="eyebrow">Your personal recap</p>
@@ -85,6 +96,63 @@
 
                     {{ form.submit(class_="submit-button") }}
                 </form>
+            </section>
+
+            <section class="faq-section dashboard-card" aria-labelledby="faq-heading">
+                <p class="section-kicker">Before you upload</p>
+                <h2 id="faq-heading" class="section-heading">
+                    Frequently asked questions
+                </h2>
+
+                <div class="faq-list">
+                    <details class="faq-item">
+                        <summary>Is my TikTok data saved?</summary>
+                        <p>
+                            No, Your TikTok export is processed in memory and is not stored
+                            in any databases or intentionally written to any form of persistent storage.
+
+                            <br>
+                            Visualisations are generated in memory. Matplotlib figures are saved onto a BytesIO
+                            buffer rather than being saved onto disk.
+                        </p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>What data is analysed?</summary>
+                        <p>
+                           The only fields that are analysed and created into a dataframe for visualisation
+                            is <b>Watch History</b> and <b> Login History</b>, unused or sensitive fields are removed
+                            before the data is processes and the visualisations created.
+                        </p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>Why does processing take a few seconds?</summary>
+                        <p>
+                           The processing takes a few seconds due to the fact that the amount of data
+                            being read, validated, processed, and figures being generated are quite
+                            computationally heavy.
+                            <br>
+                            Additionally, it was a design decision to remove the unused / sensitive information
+                            before being converted into a DataFrame to prevent analytics from being done at all.
+                        </p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>What are the limitations of the analytics?</summary>
+                        <p>
+                            Most of the dashboard's metrics are inferred from timestamps and activity
+                            records available on the TikTok export rather than directly measured by TikTok.
+                            Basic counts like the videos watched, and logins come directly from the export.
+                            <br>
+                            The export doesn't give enough / detailed information about exact watchtime,
+                            total screentime, completion rate, topics and tags for each video.
+                            The dashboard estimates some of the data displayed and due to this may not be entirely
+                            correct.
+
+                        </p>
+                    </details>
+                </div>
             </section>
         {% endif %}
 

@@ -1,6 +1,7 @@
-import json
 import zipfile
 from werkzeug.datastructures import FileStorage
+
+import orjson
 
 from typing import Any
 
@@ -12,7 +13,7 @@ SECTION_PATHS = {
 
 REQUIRED_FIELDS = {
     'watch_history': {'Date', 'Link'},
-    'login_history': {'Date', 'NetworkType'},
+    'login_history': {'Date'},
 }
 
 TIKTOK_JSON_FILENAME = 'user_data_tiktok.json'
@@ -123,9 +124,9 @@ def validate_tiktok_archive(
             if TIKTOK_JSON_FILENAME not in archive.namelist():
                 return False, 'TikTok data file is missing from the archive.', None
 
-
             with archive.open(TIKTOK_JSON_FILENAME) as json_file:
-                data = json.load(json_file)
+                json_bytes = json_file.read()
+                data = orjson.loads(json_bytes)
 
             structure_valid, error = validate_tiktok_structure(data)
 
@@ -140,11 +141,10 @@ def validate_tiktok_archive(
     except zipfile.BadZipFile:
         return False, 'The uploaded ZIP archive is corrupted.', None
 
-    except (json.JSONDecodeError, UnicodeDecodeError):
+    except (orjson.JSONDecodeError, UnicodeDecodeError):
         return False, 'The TikTok JSON file is invalid.', None
 
     except RuntimeError:
         return False, 'The TikTok data file could not be read.', None
 
     return True, None, data
-

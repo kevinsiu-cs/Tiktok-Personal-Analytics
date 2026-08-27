@@ -63,7 +63,6 @@ class LoginHistoryExtractionTests(unittest.TestCase):
                     'LoginHistoryList': [
                         {
                             'Date': '2026-01-01 10:00:00',
-                            'NetworkType': 'Wi-Fi',
                             'IP': '192.0.2.1',
                             'DeviceModel': 'Example phone',
                         }
@@ -76,7 +75,6 @@ class LoginHistoryExtractionTests(unittest.TestCase):
 
         self.assertEqual(records, [{
             'Date': '2026-01-01 10:00:00',
-            'NetworkType': 'Wi-Fi',
         }])
 
     def test_empty_login_history_returns_empty_list(self):
@@ -101,7 +99,6 @@ class LoginHistoryExtractionTests(unittest.TestCase):
 
         self.assertEqual(analytics_services.get_login_history(data), [{
             'Date': None,
-            'NetworkType': None,
         }])
 
     def test_none_login_data_is_rejected(self):

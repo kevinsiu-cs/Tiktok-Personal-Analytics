@@ -9,9 +9,9 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
 
     def setUp(self):
         records = [
-            {'Date': '2026-01-01 08:00:00', 'NetworkType': 'Wi-Fi'},
-            {'Date': '2026-01-01 08:30:00', 'NetworkType': '5G'},
-            {'Date': '2026-01-02 09:00:00', 'NetworkType': 'Unexpected'},
+            {'Date': '2026-01-01 08:00:00'},
+            {'Date': '2026-01-01 08:30:00'},
+            {'Date': '2026-01-02 09:00:00'},
         ]
         self.login_history_df = (
             login_history.create_login_history_dataframe(records)
@@ -21,14 +21,13 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
         records = [
             {
                 'Date': '2026-01-01 08:00:00',
-                'NetworkType': 'Wi-Fi',
                 'IP': '192.0.2.1',
             }
         ]
 
         dataframe = login_history.create_login_history_dataframe(records)
 
-        self.assertEqual(list(dataframe.columns), ['Date', 'NetworkType'])
+        self.assertEqual(list(dataframe.columns), ['Date'])
 
     def test_summary_calculates_login_metrics(self):
         summary = login_history.create_login_history_summary(
@@ -39,14 +38,11 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
         self.assertEqual(summary['most_active_login_hour'], 8)
         self.assertEqual(summary['average_logins_per_active_day'], 1.5)
         self.assertEqual(summary['maximum_logins_in_one_day'], 2)
-        self.assertEqual(summary['network_type_counts']['Wi-Fi'], 1)
-        self.assertEqual(summary['network_type_counts']['Cellular'], 1)
-        self.assertEqual(summary['network_type_counts']['Other'], 1)
 
     def test_dataframe_drops_invalid_dates(self):
         records = [
-            {'Date': '2026-01-01 08:00:00', 'NetworkType': 'Wi-Fi'},
-            {'Date': 'invalid', 'NetworkType': '5G'},
+            {'Date': '2026-01-01 08:00:00'},
+            {'Date': 'invalid'},
         ]
 
         dataframe = login_history.create_login_history_dataframe(records)
@@ -61,7 +57,7 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
         dataframe = login_history.create_login_history_dataframe([])
 
         self.assertTrue(dataframe.empty)
-        self.assertEqual(list(dataframe.columns), ['Date', 'NetworkType'])
+        self.assertEqual(list(dataframe.columns), ['Date'])
 
     def test_count_functions_group_logins_correctly(self):
         daily = login_history.get_login_daily_counts(self.login_history_df)
@@ -80,9 +76,9 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
 
     def test_average_logins_ignores_inactive_days(self):
         records = [
-            {'Date': '2026-01-01 08:00:00', 'NetworkType': 'Wi-Fi'},
-            {'Date': '2026-01-03 08:00:00', 'NetworkType': 'Wi-Fi'},
-            {'Date': '2026-01-03 09:00:00', 'NetworkType': 'Wi-Fi'},
+            {'Date': '2026-01-01 08:00:00'},
+            {'Date': '2026-01-03 08:00:00'},
+            {'Date': '2026-01-03 09:00:00'},
         ]
         dataframe = login_history.create_login_history_dataframe(records)
 
@@ -97,57 +93,6 @@ class LoginHistoryAnalyticsTests(unittest.TestCase):
             login_history.get_average_logins_per_active_day(dataframe),
             0.0,
         )
-
-    def test_network_labels_are_normalised(self):
-        cases = {
-            ' WiFi ': 'Wi-Fi',
-            'WI-FI': 'Wi-Fi',
-            '5g': 'Cellular',
-            ' LTE ': 'Cellular',
-            'unknown': 'Other',
-            None: 'Other',
-            5: 'Other',
-        }
-
-        for value, expected in cases.items():
-            with self.subTest(value=value):
-                self.assertEqual(
-                    login_history.classify_network_type(value),
-                    expected,
-                )
-
-    def test_network_counts_include_zero_value_categories(self):
-        dataframe = login_history.create_login_history_dataframe([
-            {'Date': '2026-01-01 08:00:00', 'NetworkType': 'Wi-Fi'},
-        ])
-
-        counts = login_history.get_network_type_counts(dataframe)
-
-        self.assertEqual(list(counts.index), ['Wi-Fi', 'Cellular', 'Other'])
-        self.assertEqual(counts.to_dict(), {
-            'Wi-Fi': 1,
-            'Cellular': 0,
-            'Other': 0,
-        })
-
-    def test_network_percentages_total_one_hundred(self):
-        percentages = login_history.get_network_type_percentages(
-            self.login_history_df
-        )
-
-        self.assertAlmostEqual(percentages.sum(), 100.0)
-        self.assertAlmostEqual(percentages.loc['Wi-Fi'], 100 / 3)
-
-    def test_empty_network_percentages_are_zero(self):
-        dataframe = login_history.create_login_history_dataframe([])
-
-        percentages = login_history.get_network_type_percentages(dataframe)
-
-        self.assertEqual(percentages.to_dict(), {
-            'Wi-Fi': 0.0,
-            'Cellular': 0.0,
-            'Other': 0.0,
-        })
 
     def test_empty_summary_has_no_most_active_values(self):
         dataframe = login_history.create_login_history_dataframe([])

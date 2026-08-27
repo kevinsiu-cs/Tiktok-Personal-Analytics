@@ -26,7 +26,6 @@ class TikTokStructureValidationTests(unittest.TestCase):
                     'LoginHistoryList': [
                         {
                             'Date': '2026-01-01 10:00:00',
-                            'NetworkType': 'Wi-Fi',
                         }
                     ],
                 },
@@ -190,7 +189,6 @@ class TikTokRequiredFieldsValidationTests(unittest.TestCase):
                     'LoginHistoryList': [
                         {
                             'Date': '2026-01-01 10:00:00',
-                            'NetworkType': 'Wi-Fi',
                         }
                     ],
                 },
@@ -269,7 +267,7 @@ class TikTokRequiredFieldsValidationTests(unittest.TestCase):
         login_records = self.valid_data['Your Activity']['Login History'][
             'LoginHistoryList'
         ]
-        login_records[0] = {'NetworkType': 'Wi-Fi'}
+        login_records[0] = {}
 
         is_valid, error = file_services.validate_tiktok_required_fields(
             self.valid_data
@@ -279,22 +277,6 @@ class TikTokRequiredFieldsValidationTests(unittest.TestCase):
         self.assertEqual(
             error,
             'Missing required field(s) in login_history: Date.',
-        )
-
-    def test_login_record_missing_network_type_is_rejected(self):
-        login_records = self.valid_data['Your Activity']['Login History'][
-            'LoginHistoryList'
-        ]
-        login_records[0] = {'Date': '2026-01-01 10:00:00'}
-
-        is_valid, error = file_services.validate_tiktok_required_fields(
-            self.valid_data
-        )
-
-        self.assertFalse(is_valid)
-        self.assertEqual(
-            error,
-            'Missing required field(s) in login_history: NetworkType.',
         )
 
     def test_watch_record_that_is_not_dictionary_is_rejected(self):
@@ -353,7 +335,6 @@ class ZipArchiveValidationTests(unittest.TestCase):
                     'LoginHistoryList': [
                         {
                             'Date': '2026-01-01 10:00:00',
-                            'NetworkType': 'Wi-Fi',
                         }
                     ],
                 },
@@ -501,7 +482,6 @@ class LoginHistoryExtractionTests(unittest.TestCase):
                     'LoginHistoryList': [
                         {
                             'Date': '2026-01-01 10:00:00',
-                            'NetworkType': 'Wi-Fi',
                             'IP': '192.0.2.1',
                             'DeviceModel': 'Example phone',
                             'DeviceSystem': 'Example OS',
@@ -519,7 +499,6 @@ class LoginHistoryExtractionTests(unittest.TestCase):
             [
                 {
                     'Date': '2026-01-01 10:00:00',
-                    'NetworkType': 'Wi-Fi',
                 }
             ],
         )

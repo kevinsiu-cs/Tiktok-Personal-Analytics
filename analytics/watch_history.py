@@ -44,9 +44,6 @@ def add_watch_history_features(watch_history_df: pd.DataFrame) -> pd.DataFrame:
 def get_total_videos_watched(watch_history_df: pd.DataFrame) -> int:
     return len(watch_history_df)
 
-'''
-The next two functions are useful for determining how many days the dataset spans
-'''
 def get_first_watch_datetime(
     watch_history_df: pd.DataFrame,
 ) -> pd.Timestamp | None:
@@ -63,16 +60,6 @@ def get_last_watch_datetime(
         return None
 
     return watch_history_df['Date'].max()
-
-#to-be-deleted.
-def get_watch_calendar_days_covered(watch_history_df: pd.DataFrame) -> int:
-    if watch_history_df.empty:
-        return 0
-
-    first_date = watch_history_df['Date'].min().normalize()
-    last_date = watch_history_df['Date'].max().normalize()
-    return (last_date - first_date).days + 1
-
 
 def get_watch_hourly_counts(watch_history_df: pd.DataFrame) -> pd.Series:
     return watch_history_df['Hour'].value_counts().reindex(
@@ -133,30 +120,6 @@ def get_watch_daily_activity_statistics(
         'average_videos_per_active_day': float(active_daily_counts.mean()),
         'median_videos_per_active_day': float(active_daily_counts.median()),
         'maximum_videos_in_one_day': int(active_daily_counts.max()),
-    }
-
-
-def get_watch_weekday_weekend_activity(
-    watch_history_df: pd.DataFrame,
-) -> dict[str, int | float]:
-
-    #dt.weekday returns an integer from 0 to 6 to represent the weekdays, In order for
-    #our sum function to be correct, we will need to create a boolean series representing
-    #which day is a weekday, rather than the specific days.
-
-    weekday_events = int((watch_history_df['Date'].dt.weekday < 5).sum())
-    weekend_events = len(watch_history_df) - weekday_events
-    total_events = len(watch_history_df)
-
-    return {
-        'weekday_count': weekday_events,
-        'weekend_count': weekend_events,
-        'weekday_percentage': (
-            weekday_events / total_events * 100 if total_events else 0.0
-        ),
-        'weekend_percentage': (
-            weekend_events / total_events * 100 if total_events else 0.0
-        ),
     }
 
 
@@ -356,13 +319,7 @@ def create_watch_history_summary(
         'total_videos_watched': get_total_videos_watched(watch_history_df),
         'first_watch_datetime': get_first_watch_datetime(watch_history_df),
         'last_watch_datetime': get_last_watch_datetime(watch_history_df),
-        'calendar_days_covered': get_watch_calendar_days_covered(
-            watch_history_df
-        ),
         'active_days': get_watch_active_days(watch_history_df),
-        'weekday_weekend_activity': get_watch_weekday_weekend_activity(
-            watch_history_df
-        ),
         'late_night_activity_percentage': get_watch_late_night_activity_percentage(
             watch_history_df,
             late_night_start_hour,

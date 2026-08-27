@@ -1,22 +1,10 @@
 import pandas as pd
 
 
-WIFI_NETWORK_NAMES = {'wi-fi', 'wifi'}
-CELLULAR_NETWORK_NAMES = {
-    'cellular',
-    'mobile',
-    '2g',
-    '3g',
-    '4g',
-    '5g',
-    'lte',
-}
-
-
 def create_login_history_dataframe(login_history: list[dict]) -> pd.DataFrame:
     login_history_df = pd.DataFrame(
         login_history,
-        columns=['Date', 'NetworkType'],
+        columns=['Date'],
     )
 
     if 'Date' not in login_history_df.columns:
@@ -79,42 +67,6 @@ def get_average_logins_per_active_day(login_history_df: pd.DataFrame) -> float:
     return float(active_daily_counts.mean())
 
 
-def classify_network_type(network_type: object) -> str:
-    """Classify known network labels without inferring user location."""
-    if not isinstance(network_type, str):
-        return 'Other'
-
-    normalised_network_type = network_type.strip().lower()
-
-    if normalised_network_type in WIFI_NETWORK_NAMES:
-        return 'Wi-Fi'
-
-    if normalised_network_type in CELLULAR_NETWORK_NAMES:
-        return 'Cellular'
-
-    return 'Other'
-
-
-def get_network_type_counts(login_history_df: pd.DataFrame) -> pd.Series:
-    network_categories = login_history_df['NetworkType'].map(
-        classify_network_type
-    )
-    return network_categories.value_counts().reindex(
-        ['Wi-Fi', 'Cellular', 'Other'],
-        fill_value=0,
-    )
-
-
-def get_network_type_percentages(login_history_df: pd.DataFrame) -> pd.Series:
-    network_counts = get_network_type_counts(login_history_df)
-    total_logins = network_counts.sum()
-
-    if total_logins == 0:
-        return network_counts.astype(float)
-
-    return network_counts / total_logins * 100
-
-
 def _get_most_active_value(counts: pd.Series):
     if counts.empty or counts.sum() == 0:
         return None
@@ -145,9 +97,5 @@ def create_login_history_summary(
         ),
         'maximum_logins_in_one_day': (
             int(daily_counts.max()) if not daily_counts.empty else 0
-        ),
-        'network_type_counts': get_network_type_counts(login_history_df),
-        'network_type_percentages': get_network_type_percentages(
-            login_history_df
         ),
     }

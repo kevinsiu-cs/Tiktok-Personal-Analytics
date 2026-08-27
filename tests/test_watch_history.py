@@ -49,7 +49,6 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
         )
 
         self.assertEqual(summary['total_videos_watched'], 4)
-        self.assertEqual(summary['calendar_days_covered'], 4)
         self.assertEqual(summary['active_days'], 3)
         self.assertEqual(summary['maximum_videos_in_one_day'], 2)
         self.assertEqual(summary['number_of_estimated_sessions'], 3)
@@ -90,7 +89,6 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
             watch_history.get_last_watch_datetime(self.watch_history_df),
             pd.Timestamp('2026-01-04 12:00:00'),
         )
-        self.assertEqual(watch_history.get_watch_calendar_days_covered(self.watch_history_df), 4)
 
     def test_empty_dataframe_has_empty_range_metrics(self):
         empty = watch_history.add_watch_history_features(
@@ -99,7 +97,6 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
 
         self.assertIsNone(watch_history.get_first_watch_datetime(empty))
         self.assertIsNone(watch_history.get_last_watch_datetime(empty))
-        self.assertEqual(watch_history.get_watch_calendar_days_covered(empty), 0)
         self.assertEqual(watch_history.get_watch_active_days(empty), 0)
 
     def test_count_functions_group_events_correctly(self):
@@ -131,16 +128,6 @@ class WatchHistoryAnalyticsTests(unittest.TestCase):
 
         self.assertEqual(statistics['average_videos_per_active_day'], 0.0)
         self.assertEqual(statistics['maximum_videos_in_one_day'], 0)
-
-    def test_weekday_and_weekend_percentages(self):
-        activity = watch_history.get_watch_weekday_weekend_activity(
-            self.watch_history_df
-        )
-
-        self.assertEqual(activity['weekday_count'], 3)
-        self.assertEqual(activity['weekend_count'], 1)
-        self.assertEqual(activity['weekday_percentage'], 75.0)
-        self.assertEqual(activity['weekend_percentage'], 25.0)
 
     def test_late_night_period_supports_crossing_midnight(self):
         percentage = watch_history.get_watch_late_night_activity_percentage(

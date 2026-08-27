@@ -30,10 +30,16 @@ body {
     padding: 4rem 0 6rem;
 }
 
-.social-links {
+.top-actions {
     position: absolute;
     top: 4rem;
     right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.social-links {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -106,6 +112,53 @@ h1 {
     padding: clamp(1.25rem, 3vw, 2rem);
 }
 
+.faq-section {
+    width: 100%;
+    max-width: 830px;
+    margin: 2rem auto 0;
+    padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.faq-section .section-heading {
+    margin-bottom: 1.5rem;
+    font-size: clamp(1.4rem, 3vw, 2rem);
+}
+
+.faq-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.faq-item {
+    align-self: start;
+    border: 1px solid var(--border);
+    background: #101827;
+    transition: border-color 160ms ease, background 160ms ease;
+}
+
+.faq-item[open] {
+    border-color: #526078;
+    background: #121d2d;
+}
+
+.faq-item summary {
+    padding: 1.1rem 1.25rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.faq-item summary::marker {
+    color: var(--accent);
+}
+
+.faq-item p {
+    margin: 0;
+    padding: 0 1.25rem 1.25rem;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
 .upload-form {
     display: grid;
     gap: 1rem;
@@ -163,6 +216,12 @@ h1 {
 
 .submit-button:hover {
     background: #e92349;
+}
+
+.reset-button {
+    display: inline-block;
+    margin-top: 1rem;
+    text-decoration: none;
 }
 
 .upload-section .submit-button {
@@ -316,8 +375,9 @@ h1 {
         margin-bottom: 2.5rem;
     }
 
-    .social-links {
+    .top-actions {
         position: static;
+        align-items: flex-start;
         margin-bottom: 2rem;
     }
 
@@ -328,6 +388,7 @@ h1 {
     .stat-grid--hero,
     .stat-grid--four,
     .stat-grid--records,
+    .faq-list,
     .chart-grid {
         grid-template-columns: 1fr;
     }
