@@ -4,11 +4,11 @@ This is a Flask-based web application that processes a User's exported Tiktok da
 
 This project focuses on learning how to design a data-processing pipeline and secure handling of sensitive user-uploaded data. Additionally, this project was a practical way to learn how to build an end-to-end data processing workflow.
 
+Compatibility Note: The application has been developed and tested using TikTok data exports generated in English. Exports generated using other languages may use different field or section names and are not currently supported
 
+### Upload Page
 
-
-Compatibility Note: The application has been developed and tested using TikTok data exports generated in English. Exports generated using other languages may use different field or section names and are not currently supported.
-
+![Upload Page](docs/images/upload_page.png)
 
 ## Why am I building it?
 
@@ -28,6 +28,10 @@ The aim is to present that data in a more interesting and visually appealing way
 - **HTML / CSS / JavaScript** - Frontend
 
 ## Features
+
+### Analytics Dashboard
+
+![Analytics Dashboard](docs/images/analytics_showcase.gif)
 
 ### Data Processing
 
