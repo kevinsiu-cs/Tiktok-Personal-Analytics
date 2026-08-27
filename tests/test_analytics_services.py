@@ -1,0 +1,110 @@
+import unittest
+
+from services import analytics_services
+
+
+class WatchHistoryExtractionTests(unittest.TestCase):
+
+    def test_only_allowlisted_watch_fields_are_extracted(self):
+        data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [
+                        {
+                            'Date': '2026-01-01 10:00:00',
+                            'Link': 'https://example.com/private-video',
+                            'ExtraPrivateField': 'private',
+                        }
+                    ]
+                }
+            }
+        }
+
+        records = analytics_services.get_watch_history(data)
+
+        self.assertEqual(records, [{'Date': '2026-01-01 10:00:00'}])
+
+    def test_empty_watch_history_returns_empty_list(self):
+        data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [],
+                }
+            }
+        }
+
+        self.assertEqual(analytics_services.get_watch_history(data), [])
+
+    def test_missing_watch_date_is_returned_as_none(self):
+        data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [{'Link': 'private'}],
+                }
+            }
+        }
+
+        self.assertEqual(
+            analytics_services.get_watch_history(data),
+            [{'Date': None}],
+        )
+
+    def test_none_watch_data_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'TikTok data cannot be empty'):
+            analytics_services.get_watch_history(None)
+
+
+class LoginHistoryExtractionTests(unittest.TestCase):
+
+    def test_only_allowlisted_login_fields_are_extracted(self):
+        data = {
+            'Your Activity': {
+                'Login History': {
+                    'LoginHistoryList': [
+                        {
+                            'Date': '2026-01-01 10:00:00',
+                            'IP': '192.0.2.1',
+                            'DeviceModel': 'Example phone',
+                        }
+                    ]
+                }
+            }
+        }
+
+        records = analytics_services.get_login_history(data)
+
+        self.assertEqual(records, [{
+            'Date': '2026-01-01 10:00:00',
+        }])
+
+    def test_empty_login_history_returns_empty_list(self):
+        data = {
+            'Your Activity': {
+                'Login History': {
+                    'LoginHistoryList': [],
+                }
+            }
+        }
+
+        self.assertEqual(analytics_services.get_login_history(data), [])
+
+    def test_missing_login_fields_are_returned_as_none(self):
+        data = {
+            'Your Activity': {
+                'Login History': {
+                    'LoginHistoryList': [{}],
+                }
+            }
+        }
+
+        self.assertEqual(analytics_services.get_login_history(data), [{
+            'Date': None,
+        }])
+
+    def test_none_login_data_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'TikTok data cannot be empty'):
+            analytics_services.get_login_history(None)
+
+
+if __name__ == '__main__':
+    unittest.main()

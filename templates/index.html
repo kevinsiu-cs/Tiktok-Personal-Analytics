@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doomscrolled On TikTok</title>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+    <main
+        class="page-shell"
+        {% if statistics and charts %}
+            data-refresh-url="{{ url_for('index') }}"
+        {% endif %}
+    >
+        <div class="top-actions">
+            <nav class="social-links" aria-label="Project and profile links">
+                <a
+                    href="https://github.com/kevinsiu-cs/Tiktok-Personal-Analytics"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="View this project on GitHub"
+                >
+                    <img
+                        src="{{ url_for('static', filename='images/github_logo.png') }}"
+                        alt=""
+                    >
+                </a>
+                <a
+                    href="https://www.linkedin.com/in/kevin-siu-cs/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="View Kevin Siu's LinkedIn profile"
+                >
+                    <img
+                        src="{{ url_for('static', filename='images/linkedin_logo.png') }}"
+                        alt=""
+                    >
+                </a>
+            </nav>
+
+            {% if statistics and charts %}
+                <a
+                    class="submit-button reset-button"
+                    href="{{ url_for('index') }}"
+                >
+                    Upload another file
+                </a>
+            {% endif %}
+        </div>
+
+        <header class="site-header">
+            <p class="eyebrow">Your personal recap</p>
+            <h1>Doomscrolled On TikTok</h1>
+            <p class="site-subtitle">
+                Explore patterns in your TikTok viewing activity.
+            </p>
+        </header>
+
+        {% if not charts %}
+            <section class="upload-section dashboard-card" aria-label="Upload TikTok data">
+                <form
+                    class="upload-form"
+                    method="POST"
+                    enctype="multipart/form-data"
+                >
+                    {{ form.hidden_tag() }}
+
+                    <p id="selected-file" class="selected-file" aria-live="polite">
+                        <strong>Uploaded file:</strong>
+                        <span id="selected-file-name">None</span>
+                    </p>
+                    <p id="file-error" class="form-error" role="alert" hidden></p>
+
+                    <label class="upload-area" for="tiktok-export">
+                        <strong>
+                            Drag and drop your TikTok data export here
+                        </strong><br>
+                        <span>or click to select a ZIP file</span>
+                        {{ form.uploaded_file(
+                            id="tiktok-export",
+                            accept=".zip"
+                        ) }}
+                    </label>
+
+                    {% if request_error or form.uploaded_file.errors %}
+                        <ul class="error-list">
+                            {% if request_error %}
+                                <li>{{ request_error }}</li>
+                            {% endif %}
+                            {% for error in form.uploaded_file.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    {{ form.submit(
+                        class_="submit-button",
+                        id="upload-submit"
+                    ) }}
+
+                    <div
+                        id="upload-loading"
+                        class="upload-loading"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        hidden
+                    >
+                        <span class="loading-spinner" aria-hidden="true"></span>
+                        <p>
+                            <strong>Processing your TikTok data...</strong>
+                            <span>Larger exports may take a few seconds.</span>
+                        </p>
+                    </div>
+                </form>
+            </section>
+
+            <section class="faq-section dashboard-card" aria-labelledby="faq-heading">
+                <p class="section-kicker">Before you upload</p>
+                <h2 id="faq-heading" class="section-heading">
+                    Frequently asked questions
+                </h2>
+
+                <div class="faq-list">
+                    <details class="faq-item">
+                        <summary>Is my TikTok data saved?</summary>
+                        <p>
+                            No, Your TikTok export is processed in memory and is not stored
+                            in any databases or intentionally written to any form of persistent storage.
+
+                            <br>
+                            Visualisations are generated in memory. Matplotlib figures are saved onto a BytesIO
+                            buffer rather than being saved onto disk.
+                        </p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>What data is analysed?</summary>
+                        <p>
+                           The only fields that are analysed and created into a dataframe for visualisation
+                            is <b>Watch History</b> and <b> Login History</b>, unused or sensitive fields are removed
+                            before the data is processes and the visualisations created.
+                        </p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>Why does processing take a few seconds?</summary>
+                        <p>
+                           The processing takes a few seconds due to the fact that the amount of data
+                            being read, validated, processed, and figures being generated are quite
+                            computationally heavy.
+                            <br>
+                            Additionally, it was a design decision to remove the unused / sensitive information
+                            before being converted into a DataFrame to prevent analytics from being done at all.
+                        </p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>What are the limitations of the analytics?</summary>
+                        <p>
+                            Most of the dashboard's metrics are inferred from timestamps and activity
+                            records available on the TikTok export rather than directly measured by TikTok.
+                            Basic counts like the videos watched, and logins come directly from the export.
+                            <br>
+                            The export doesn't give enough / detailed information about exact watchtime,
+                            total screentime, completion rate, topics and tags for each video.
+                            The dashboard estimates some of the data displayed and due to this may not be entirely
+                            correct.
+
+                        </p>
+                    </details>
+                </div>
+            </section>
+        {% endif %}
+
+        {% if statistics and charts %}
+            <section class="dashboard-section" aria-labelledby="history-heading">
+                <p class="section-kicker">Your complete viewing history</p>
+                <h2 id="history-heading" class="section-heading">
+                    {% if statistics.first_watch_datetime %}
+                        Since {{ statistics.first_watch_datetime.strftime('%d %B %Y') }}
+                    {% else %}
+                        No viewing activity found
+                    {% endif %}
+                </h2>
+
+                <dl class="stat-grid stat-grid--hero">
+                    <div class="stat-card stat-card--accent">
+                        <dd>{{ '{:,}'.format(statistics.total_videos_watched) }}</dd>
+                        <dt>Videos watched</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ '{:,}'.format(statistics.active_days) }}</dd>
+                        <dt>Active days</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ '{:,}'.format(statistics.number_of_estimated_sessions) }}</dd>
+                        <dt>Estimated sessions</dt>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="dashboard-section" aria-labelledby="perspective-heading">
+                <h2 id="perspective-heading" class="section-heading">
+                    Your viewing in perspective
+                </h2>
+                <dl class="stat-grid stat-grid--four">
+                    <div class="stat-card">
+                        <dd>{{ '%.1f'|format(statistics.average_videos_per_active_day) }}</dd>
+                        <dt>Videos per active day</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ '%.1f'|format(statistics.average_videos_per_session) }}</dd>
+                        <dt>Videos per session</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ '%.1f'|format(statistics.average_sessions_per_active_day) }}</dd>
+                        <dt>Sessions per active day</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ statistics.average_session_duration_display }}</dd>
+                        <dt>Average observed session</dt>
+                    </div>
+                </dl>
+                <p class="section-note">
+                    Session duration is estimated from the time between observed
+                    viewing events and does not represent exact screen time.
+                </p>
+            </section>
+
+            <section class="dashboard-section" aria-labelledby="records-heading">
+                <h2 id="records-heading" class="section-heading">Your records</h2>
+                <dl class="stat-grid stat-grid--records">
+                    {% if statistics.most_active_day %}
+                        <div class="stat-card">
+                            <dd>{{ '{:,}'.format(statistics.maximum_videos_in_one_day) }} videos</dd>
+                            <dt>Busiest day</dt>
+                            <span>{{ statistics.most_active_day.strftime('%d %B %Y') }}</span>
+                        </div>
+                    {% endif %}
+                    <div class="stat-card">
+                        <dd>{{ statistics.longest_session_duration_display }}</dd>
+                        <dt>Longest observed session</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ '{:,}'.format(statistics.maximum_videos_in_one_session) }} videos</dd>
+                        <dt>Most videos in one session</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ statistics.most_active_hour_display }}</dd>
+                        <dt>Most active hour</dt>
+                    </div>
+                    <div class="stat-card">
+                        <dd>{{ statistics.most_active_weekday }}</dd>
+                        <dt>Most active weekday</dt>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="dashboard-section" aria-labelledby="activity-heading">
+                <h2 id="activity-heading" class="section-heading">Activity over time</h2>
+                <div class="chart-grid">
+                    <figure class="chart-card chart-card--wide">
+                        <figcaption>Daily viewing activity</figcaption>
+                        <img src="data:image/png;base64,{{ charts.daily }}" alt="Line chart showing daily viewing activity">
+                    </figure>
+                    <figure class="chart-card">
+                        <figcaption>Viewing activity by hour</figcaption>
+                        <img src="data:image/png;base64,{{ charts.hourly }}" alt="Bar chart showing videos watched by hour of day">
+                    </figure>
+                    <figure class="chart-card">
+                        <figcaption>Viewing activity by weekday</figcaption>
+                        <img src="data:image/png;base64,{{ charts.weekday }}" alt="Pie chart showing the share of videos watched by weekday">
+                    </figure>
+                    <figure class="chart-card">
+                        <figcaption>Weekly viewing activity</figcaption>
+                        <img src="data:image/png;base64,{{ charts.weekly }}" alt="Line chart showing weekly viewing activity">
+                    </figure>
+                    <figure class="chart-card">
+                        <figcaption>Monthly viewing activity</figcaption>
+                        <img src="data:image/png;base64,{{ charts.monthly }}" alt="Line chart showing monthly viewing activity">
+                    </figure>
+                </div>
+            </section>
+
+            {% if login_statistics and charts.login_daily %}
+                <section class="dashboard-section dashboard-section--secondary" aria-labelledby="login-heading">
+                    <h2 id="login-heading" class="section-heading">Login activity</h2>
+                    <dl class="stat-grid stat-grid--records">
+                        <div class="stat-card">
+                            <dd>{{ '{:,}'.format(login_statistics.total_login_events) }}</dd>
+                            <dt>Total login events</dt>
+                        </div>
+                        <div class="stat-card">
+                            <dd>{{ '%.1f'|format(login_statistics.average_logins_per_active_day) }}</dd>
+                            <dt>Logins per active day</dt>
+                        </div>
+                        <div class="stat-card">
+                            <dd>{{ '{:,}'.format(login_statistics.maximum_logins_in_one_day) }}</dd>
+                            <dt>Most logins in one day</dt>
+                        </div>
+                        <div class="stat-card">
+                            <dd>{{ login_statistics.most_active_hour_display }}</dd>
+                            <dt>Most active login hour</dt>
+                        </div>
+                        <div class="stat-card">
+                            <dd>{{ login_statistics.most_active_login_weekday }}</dd>
+                            <dt>Most active login weekday</dt>
+                        </div>
+                    </dl>
+                    <figure class="chart-card chart-card--login">
+                        <figcaption>Daily login activity</figcaption>
+                        <img src="data:image/png;base64,{{ charts.login_daily }}" alt="Line chart showing daily login activity">
+                    </figure>
+                </section>
+            {% endif %}
+        {% endif %}
+
+    </main>
+    <script
+        src="{{ url_for('static', filename='script.js') }}"
+        defer
+    ></script>
+</body>
+
+</html>

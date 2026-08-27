@@ -1,0 +1,593 @@
+import unittest
+from io import BytesIO
+import json
+from unittest.mock import patch
+import zipfile
+
+from werkzeug.datastructures import FileStorage
+
+from services import analytics_services, file_services
+
+
+class TikTokStructureValidationTests(unittest.TestCase):
+
+    def setUp(self):
+        self.valid_data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [
+                        {
+                            'Date': '2026-01-01 10:00:00',
+                        }
+                    ],
+                },
+                'Login History': {
+                    'LoginHistoryList': [
+                        {
+                            'Date': '2026-01-01 10:00:00',
+                        }
+                    ],
+                },
+            }
+        }
+
+    def test_valid_structure_is_accepted(self):
+        is_valid, error = file_services.validate_tiktok_structure(
+            self.valid_data
+        )
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(error)
+
+    def test_empty_history_lists_are_accepted(self):
+        data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [],
+                },
+                'Login History': {
+                    'LoginHistoryList': [],
+                },
+            }
+        }
+
+        is_valid, error = file_services.validate_tiktok_structure(data)
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(error)
+
+    def test_missing_your_activity_is_rejected(self):
+        data = {}
+
+        is_valid, error = file_services.validate_tiktok_structure(data)
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required TikTok section: Your Activity.',
+        )
+
+    def test_missing_watch_history_is_rejected(self):
+        data = {
+            'Your Activity': {
+                'Login History': {
+                    'LoginHistoryList': [],
+                },
+            }
+        }
+
+        is_valid, error = file_services.validate_tiktok_structure(data)
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required TikTok section: Watch History.',
+        )
+
+    def test_missing_video_list_is_rejected(self):
+        data = {
+            'Your Activity': {
+                'Watch History': {},
+                'Login History': {
+                    'LoginHistoryList': [],
+                },
+            }
+        }
+
+        is_valid, error = file_services.validate_tiktok_structure(data)
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required TikTok section: VideoList.',
+        )
+
+    def test_missing_login_history_is_rejected(self):
+        data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [],
+                },
+            }
+        }
+
+        is_valid, error = file_services.validate_tiktok_structure(data)
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required TikTok section: Login History.',
+        )
+
+    def test_missing_login_history_list_is_rejected(self):
+        data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [],
+                },
+                'Login History': {},
+            }
+        }
+
+        is_valid, error = file_services.validate_tiktok_structure(data)
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required TikTok section: LoginHistoryList.',
+        )
+
+    def test_both_history_sections_missing_are_rejected(self):
+        data = {'Your Activity': {}}
+
+        is_valid, error = file_services.validate_tiktok_structure(data)
+
+        self.assertFalse(is_valid)
+        self.assertIsNotNone(error)
+
+    def test_history_dictionary_instead_of_list_is_rejected(self):
+        data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': {},
+                },
+                'Login History': {
+                    'LoginHistoryList': [],
+                },
+            }
+        }
+
+        is_valid, error = file_services.validate_tiktok_structure(data)
+
+        self.assertFalse(is_valid)
+        self.assertEqual(error, 'Invalid data format for watch_history.')
+
+    def test_non_dictionary_parent_is_rejected(self):
+        data = {'Your Activity': []}
+
+        is_valid, error = file_services.validate_tiktok_structure(data)
+
+        self.assertFalse(is_valid)
+        self.assertEqual(error, 'Invalid structure for watch_history.')
+
+
+class TikTokRequiredFieldsValidationTests(unittest.TestCase):
+
+    def setUp(self):
+        self.valid_data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [
+                        {
+                            'Date': '2026-01-01 10:00:00',
+                        }
+                    ],
+                },
+                'Login History': {
+                    'LoginHistoryList': [
+                        {
+                            'Date': '2026-01-01 10:00:00',
+                        }
+                    ],
+                },
+            }
+        }
+
+    def test_records_with_all_required_fields_are_accepted(self):
+        is_valid, error = file_services.validate_tiktok_required_fields(
+            self.valid_data
+        )
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(error)
+
+    def test_empty_history_lists_are_accepted(self):
+        data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [],
+                },
+                'Login History': {
+                    'LoginHistoryList': [],
+                },
+            }
+        }
+
+        is_valid, error = file_services.validate_tiktok_required_fields(data)
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(error)
+
+    def test_watch_record_missing_date_is_rejected(self):
+        self.valid_data['Your Activity']['Watch History']['VideoList'][0] = {}
+
+        is_valid, error = file_services.validate_tiktok_required_fields(
+            self.valid_data
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required field(s) in watch_history: Date.',
+        )
+
+    def test_login_record_missing_date_is_rejected(self):
+        login_records = self.valid_data['Your Activity']['Login History'][
+            'LoginHistoryList'
+        ]
+        login_records[0] = {}
+
+        is_valid, error = file_services.validate_tiktok_required_fields(
+            self.valid_data
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required field(s) in login_history: Date.',
+        )
+
+    def test_watch_record_that_is_not_dictionary_is_rejected(self):
+        self.valid_data['Your Activity']['Watch History']['VideoList'][0] = (
+            'not a record'
+        )
+
+        is_valid, error = file_services.validate_tiktok_required_fields(
+            self.valid_data
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Invalid record format in watch_history.',
+        )
+
+    def test_login_record_that_is_not_dictionary_is_rejected(self):
+        login_records = self.valid_data['Your Activity']['Login History'][
+            'LoginHistoryList'
+        ]
+        login_records[0] = ['not', 'a', 'record']
+
+        is_valid, error = file_services.validate_tiktok_required_fields(
+            self.valid_data
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Invalid record format in login_history.',
+        )
+
+
+class ZipArchiveValidationTests(unittest.TestCase):
+
+    @staticmethod
+    def create_upload(files: dict[str, bytes]) -> FileStorage:
+        stream = BytesIO()
+        with zipfile.ZipFile(stream, 'w') as archive:
+            for filename, contents in files.items():
+                archive.writestr(filename, contents)
+        stream.seek(0)
+        return FileStorage(stream=stream, filename='export.zip')
+
+    @staticmethod
+    def valid_tiktok_data() -> dict:
+        return {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [
+                        {'Date': '2026-01-01 10:00:00'}
+                    ],
+                },
+                'Login History': {
+                    'LoginHistoryList': [
+                        {
+                            'Date': '2026-01-01 10:00:00',
+                        }
+                    ],
+                },
+            }
+        }
+
+    def test_valid_zip_archive_is_accepted_and_rewound(self):
+        uploaded_file = self.create_upload({'example.txt': b'content'})
+
+        is_valid, error = file_services.validate_zip_archive(uploaded_file)
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(error)
+        self.assertEqual(uploaded_file.stream.tell(), 0)
+
+    def test_non_zip_file_is_rejected_and_rewound(self):
+        uploaded_file = FileStorage(
+            stream=BytesIO(b'not a zip file'),
+            filename='fake.zip',
+        )
+
+        is_valid, error = file_services.validate_zip_archive(uploaded_file)
+
+        self.assertFalse(is_valid)
+        self.assertEqual(error, 'The uploaded file is not a valid ZIP archive.')
+        self.assertEqual(uploaded_file.stream.tell(), 0)
+
+    def test_zip_over_uncompressed_size_limit_is_rejected(self):
+        uploaded_file = self.create_upload({'large.txt': b'12345'})
+
+        with patch('services.file_services.MAX_UNCOMPRESSED_SIZE', 4):
+            is_valid, error = file_services.validate_zip_archive(uploaded_file)
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'The ZIP archive contains too much uncompressed data.',
+        )
+
+    def test_valid_tiktok_archive_returns_parsed_data(self):
+        tiktok_data = self.valid_tiktok_data()
+        expected_data = {
+            'watch_history': ['2026-01-01 10:00:00'],
+            'login_history': ['2026-01-01 10:00:00'],
+        }
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(tiktok_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(error)
+        self.assertEqual(data, expected_data)
+
+    def test_empty_history_arrays_are_accepted(self):
+        tiktok_data = self.valid_tiktok_data()
+        tiktok_data['Your Activity']['Watch History']['VideoList'] = []
+        tiktok_data['Your Activity']['Login History'][
+            'LoginHistoryList'
+        ] = []
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(tiktok_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(error)
+        self.assertEqual(data, {
+            'watch_history': [],
+            'login_history': [],
+        })
+
+    def test_extra_record_fields_are_not_returned(self):
+        tiktok_data = self.valid_tiktok_data()
+        watch_record = tiktok_data['Your Activity']['Watch History'][
+            'VideoList'
+        ][0]
+        watch_record['Link'] = 'https://example.com/private-video'
+        watch_record['ExtraPrivateField'] = 'private'
+        login_record = tiktok_data['Your Activity']['Login History'][
+            'LoginHistoryList'
+        ][0]
+        login_record['IP'] = '192.0.2.1'
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(tiktok_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(error)
+        self.assertEqual(data, {
+            'watch_history': ['2026-01-01 10:00:00'],
+            'login_history': ['2026-01-01 10:00:00'],
+        })
+
+    def test_archive_missing_tiktok_file_is_rejected(self):
+        uploaded_file = self.create_upload({'other.json': b'{}'})
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'TikTok data file is missing from the archive.',
+        )
+        self.assertIsNone(data)
+
+    def test_archive_with_invalid_json_is_rejected(self):
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': b'{invalid json',
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(error, 'The TikTok JSON file is invalid.')
+        self.assertIsNone(data)
+
+    def test_archive_with_invalid_structure_is_rejected(self):
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': b'{}',
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required TikTok section: Your Activity.',
+        )
+        self.assertIsNone(data)
+
+    def test_archive_with_invalid_history_array_type_is_rejected(self):
+        invalid_data = self.valid_tiktok_data()
+        invalid_data['Your Activity']['Watch History']['VideoList'] = {}
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(invalid_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(error, 'Invalid data format for watch_history.')
+        self.assertIsNone(data)
+
+    def test_archive_with_non_object_record_is_rejected(self):
+        invalid_data = self.valid_tiktok_data()
+        invalid_data['Your Activity']['Watch History']['VideoList'][0] = (
+            'not a record'
+        )
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(invalid_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(error, 'Invalid record format in watch_history.')
+        self.assertIsNone(data)
+
+    def test_archive_with_missing_record_field_is_rejected(self):
+        invalid_data = self.valid_tiktok_data()
+        invalid_data['Your Activity']['Watch History']['VideoList'][0].pop(
+            'Date'
+        )
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(invalid_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required field(s) in watch_history: Date.',
+        )
+        self.assertIsNone(data)
+
+    def test_archive_with_missing_login_date_is_rejected(self):
+        invalid_data = self.valid_tiktok_data()
+        invalid_data['Your Activity']['Login History'][
+            'LoginHistoryList'
+        ][0].pop('Date')
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': json.dumps(invalid_data).encode(),
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(
+            error,
+            'Missing required field(s) in login_history: Date.',
+        )
+        self.assertIsNone(data)
+
+    def test_malformed_json_after_valid_sections_is_rejected(self):
+        valid_json = json.dumps(self.valid_tiktok_data()).encode()
+        uploaded_file = self.create_upload({
+            'user_data_tiktok.json': valid_json + b' trailing garbage',
+        })
+
+        is_valid, error, data = file_services.validate_tiktok_archive(
+            uploaded_file
+        )
+
+        self.assertFalse(is_valid)
+        self.assertEqual(error, 'The TikTok JSON file is invalid.')
+        self.assertIsNone(data)
+
+
+class LoginHistoryExtractionTests(unittest.TestCase):
+
+    def test_only_date_is_extracted_from_watch_history(self):
+        data = {
+            'Your Activity': {
+                'Watch History': {
+                    'VideoList': [
+                        {
+                            'Date': '2026-01-01 10:00:00',
+                            'Link': 'https://example.com/video',
+                        }
+                    ]
+                }
+            }
+        }
+
+        records = analytics_services.get_watch_history(data)
+
+        self.assertEqual(
+            records,
+            [{'Date': '2026-01-01 10:00:00'}],
+        )
+
+    def test_only_allowlisted_login_fields_are_extracted(self):
+        data = {
+            'Your Activity': {
+                'Login History': {
+                    'LoginHistoryList': [
+                        {
+                            'Date': '2026-01-01 10:00:00',
+                            'IP': '192.0.2.1',
+                            'DeviceModel': 'Example phone',
+                            'DeviceSystem': 'Example OS',
+                            'Carrier': 'Example carrier',
+                        }
+                    ]
+                }
+            }
+        }
+
+        records = analytics_services.get_login_history(data)
+
+        self.assertEqual(
+            records,
+            [
+                {
+                    'Date': '2026-01-01 10:00:00',
+                }
+            ],
+        )
+
+
+if __name__ == '__main__':
+    unittest.main()
